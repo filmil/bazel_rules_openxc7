@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: Apache-2.0
+# FPGAwars' tools-openxc7 bundle: openXC7's nextpnr (himbaechel xilinx),
+# Project X-Ray's tools, their Python, the Project X-Ray database and
+# prebuilt chip databases. The bin/ entries are wrappers that run the
+# bundle's own loader and libraries, so nothing comes from the host but
+# bash.
+package(default_visibility = ["//visibility:public"])
+
+_LIBS = glob(
+    ["lib/*"],
+    exclude = ["lib/python3.12"],
+)
+
+filegroup(
+    name = "nextpnr",
+    srcs = ["bin/nextpnr-xilinx"],
+)
+
+filegroup(
+    name = "nextpnr_files",
+    srcs = ["libexec/nextpnr-xilinx"] + _LIBS,
+)
+
+filegroup(
+    name = "fasm2frames",
+    srcs = ["bin/fasm2frames"],
+)
+
+filegroup(
+    name = "fasm2frames_files",
+    srcs = [
+        "bin/tabbypy3",
+        "libexec/fasm2frames",
+        "libexec/python3.12",
+    ] + _LIBS + glob(["lib/python3.12/**"]),
+)
+
+filegroup(
+    name = "xc7frames2bit",
+    srcs = ["bin/xc7frames2bit"],
+)
+
+filegroup(
+    name = "xc7frames2bit_files",
+    srcs = ["libexec/xc7frames2bit"] + _LIBS,
+)
+
+filegroup(
+    name = "chipdb_xc7a200t",
+    srcs = ["chipdb/chipdb-xc7a200t.bin"],
+)
+
+filegroup(
+    name = "prjxray_db_artix7",
+    srcs = glob(["share/nextpnr/external/prjxray-db/artix7/**"]),
+)
+
+filegroup(
+    name = "part_xc7a200tfbg484-2",
+    srcs = ["share/nextpnr/external/prjxray-db/artix7/xc7a200tfbg484-2/part.yaml"],
+)

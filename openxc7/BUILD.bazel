@@ -8,6 +8,7 @@ bzl_library(
     name = "defs",
     srcs = ["defs.bzl"],
     visibility = ["//visibility:public"],
+    deps = ["//openxc7/private"],
 )
 
 exports_files(["defs.bzl"])

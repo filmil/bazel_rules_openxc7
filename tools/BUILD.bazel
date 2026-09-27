@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+# Development tools. They use the module's dev dependencies, so they live
+# apart from the packages a user of the module loads.
+load("@buildifier_prebuilt//:rules.bzl", "buildifier")
+
+# bazel run //tools:buildifier
+buildifier(
+    name = "buildifier",
+)

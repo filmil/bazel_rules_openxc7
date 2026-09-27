@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+
+package(default_visibility = ["//openxc7:__subpackages__"])
+
+exports_files(["program.sh.tpl"])
+
+py_library(
+    name = "xdc_translate_lib",
+    srcs = ["xdc_translate.py"],
+)
+
+py_binary(
+    name = "xdc_translate",
+    srcs = ["xdc_translate.py"],
+)
+
+py_library(
+    name = "bit_normalize_lib",
+    srcs = ["bit_normalize.py"],
+)
+
+py_binary(
+    name = "bit_normalize",
+    srcs = ["bit_normalize.py"],
+)
+
+py_test(
+    name = "xdc_translate_test",
+    size = "small",
+    srcs = ["xdc_translate_test.py"],
+    deps = [":xdc_translate_lib"],
+)
+
+py_test(
+    name = "bit_normalize_test",
+    size = "small",
+    srcs = ["bit_normalize_test.py"],
+    deps = [":bit_normalize_lib"],
+)
+
+bzl_library(
+    name = "private",
+    srcs = glob(["*.bzl"]),
+    visibility = ["//openxc7:__pkg__"],
+)

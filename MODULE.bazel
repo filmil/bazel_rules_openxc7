@@ -7,6 +7,7 @@ module(
 bazel_dep(name = "bazel_skylib", version = "1.9.2")
 bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "rules_shell", version = "0.8.0")
+bazel_dep(name = "rules_python", version = "2.3.4")
 
 # A hermetic C and C++ toolchain for this repository's own builds: LLVM,
 # with a pinned Debian sysroot, so nothing is compiled against the host's
@@ -56,3 +57,30 @@ sysroot(
 bazel_dep(name = "bazel_lib", version = "3.7.2", dev_dependency = True)
 bazel_dep(name = "buildifier_prebuilt", version = "10.1.0", dev_dependency = True)
 bazel_dep(name = "stardoc", version = "0.8.1", dev_dependency = True)
+
+# The toolchains the rules resolve; --@rules_openxc7//:tools picks one.
+register_toolchains("//openxc7/toolchains:all")
+
+# Prebuilt tools, fetched by sha256. Pinned to one dated release of each
+# bundle; the dates move together, and README.md says which tools and
+# versions each holds. Old dated releases of both are pruned in time, so
+# this repository's own release is to take their place (README.md, plan).
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+# FPGAwars tools-openxc7: openXC7 nextpnr e860c9c8 (himbaechel xilinx),
+# Project X-Ray tools, prjxray-db a90f27c1, chip databases.
+http_archive(
+    name = "openxc7_prebuilt_linux_x86_64",
+    build_file = "//third_party/prebuilt:openxc7.BUILD.bazel",
+    sha256 = "26c54f2153ed8869362f689bcb4e5d7f1feb060e6715c0acdaf28f7c269cc270",
+    urls = ["https://github.com/FPGAwars/tools-openxc7/releases/download/2026-09-27/apio-openxc7-linux-x86-64-20260927.tgz"],
+)
+
+# YosysHQ OSS CAD Suite: Yosys and openFPGALoader.
+http_archive(
+    name = "oss_cad_suite_linux_x86_64",
+    build_file = "//third_party/prebuilt:oss_cad_suite.BUILD.bazel",
+    sha256 = "8af3500957e8a304a9bb67ecbcd1e9a7a8bc6ae0813075cc812bfac6143aed86",
+    strip_prefix = "oss-cad-suite",
+    urls = ["https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2026-09-27/oss-cad-suite-linux-x64-20260927.tgz"],
+)

@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: Apache-2.0
+# The toolchains the rules resolve. `--@rules_openxc7//:tools` picks one:
+# `prebuilt` (the default) fetches the tools by sha256; `source` builds
+# them, and is not in yet.
+load("//openxc7/private:toolchain.bzl", "openxc7_toolchain")
+
+toolchain_type(
+    name = "toolchain_type",
+    visibility = ["//visibility:public"],
+)
+
+openxc7_toolchain(
+    name = "prebuilt_linux_x86_64",
+    chipdbs = {
+        "@openxc7_prebuilt_linux_x86_64//:chipdb_xc7a200t": "xc7a200t",
+    },
+    fasm2frames = "@openxc7_prebuilt_linux_x86_64//:fasm2frames",
+    fasm2frames_files = ["@openxc7_prebuilt_linux_x86_64//:fasm2frames_files"],
+    nextpnr = "@openxc7_prebuilt_linux_x86_64//:nextpnr",
+    nextpnr_files = ["@openxc7_prebuilt_linux_x86_64//:nextpnr_files"],
+    openfpgaloader = "@oss_cad_suite_linux_x86_64//:openfpgaloader",
+    openfpgaloader_files = ["@oss_cad_suite_linux_x86_64//:openfpgaloader_files"],
+    part_files = {
+        "@openxc7_prebuilt_linux_x86_64//:part_xc7a200tfbg484-2": "xc7a200tfbg484-2",
+    },
+    prjxray_db = ["@openxc7_prebuilt_linux_x86_64//:prjxray_db_artix7"],
+    xc7frames2bit = "@openxc7_prebuilt_linux_x86_64//:xc7frames2bit",
+    xc7frames2bit_files = ["@openxc7_prebuilt_linux_x86_64//:xc7frames2bit_files"],
+    yosys = "@oss_cad_suite_linux_x86_64//:yosys",
+    yosys_files = ["@oss_cad_suite_linux_x86_64//:yosys_files"],
+)
+
+toolchain(
+    name = "prebuilt_linux_x86_64_toolchain",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    target_settings = ["//:tools_prebuilt"],
+    toolchain = ":prebuilt_linux_x86_64",
+    toolchain_type = ":toolchain_type",
+)
