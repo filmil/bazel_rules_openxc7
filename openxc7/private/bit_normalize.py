@@ -8,7 +8,9 @@ fpga-as write the wall clock into `c` and `d`, and xc7frames2bit writes the
 whole path of its input into `a`, which under Bazel names the output
 directory. So two builds of one design differ, and nothing downstream can
 be cached. This sets `c` and `d` to fixed values and cuts the path in `a`
-to its base name. The configuration data after `e` is not touched.
+to its base name. fpga-as writes 0 as the `e` length, which a loader that
+trusts the header then reads as an empty bitstream, so `e` is set to the
+length of the data that follows. The configuration data is not touched.
 
     bit_normalize in.bit out.bit
 """
@@ -36,7 +38,12 @@ def normalize(data):
     while True:
         key = data[pos:pos + 1]
         if key == b"e":
-            out += data[pos:]
+            body = data[pos + 5:]
+            (declared,) = struct.unpack(">I", data[pos + 1:pos + 5])
+            if declared not in (0, len(body)):
+                raise ValueError("the e field says %d bytes, and %d follow"
+                                 % (declared, len(body)))
+            out += b"e" + struct.pack(">I", len(body)) + body
             return bytes(out)
         if key not in (b"a", b"b", b"c", b"d"):
             raise ValueError("unexpected header field %r at %d" % (key, pos))
