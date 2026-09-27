@@ -1,7 +1,30 @@
 # SPDX-License-Identifier: Apache-2.0
-load("@buildifier_prebuilt//:rules.bzl", "buildifier")
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 
-# bazel run //:buildifier
-buildifier(
-    name = "buildifier",
+# This package is loaded by every user of the module (the flag below), so
+# it names nothing from the dev dependencies; buildifier is //tools.
+
+# Where the tools come from:
+#   --@rules_openxc7//:tools=prebuilt   download them by sha256 (the default)
+#   --@rules_openxc7//:tools=source     build them from source with Bazel
+string_flag(
+    name = "tools",
+    build_setting_default = "prebuilt",
+    values = [
+        "prebuilt",
+        "source",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "tools_prebuilt",
+    flag_values = {":tools": "prebuilt"},
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "tools_source",
+    flag_values = {":tools": "source"},
+    visibility = ["//visibility:public"],
 )

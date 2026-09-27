@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+# YosysHQ's OSS CAD Suite, for Yosys and openFPGALoader. The bin/ entries
+# are wrappers that run the suite's own loader and libraries.
+package(default_visibility = ["//visibility:public"])
+
+# The libraries directly in lib/; a glob of lib/* names files only, so
+# the subdirectories (Python, Tcl, GHDL) stay out.
+_LIBS = glob(["lib/*"])
+
+filegroup(
+    name = "yosys",
+    srcs = ["bin/yosys"],
+)
+
+filegroup(
+    name = "yosys_files",
+    srcs = [
+        "bin/yosys-abc",
+        "libexec/yosys",
+        "libexec/yosys-abc",
+    ] + _LIBS + glob(["share/yosys/**"]),
+)
+
+filegroup(
+    name = "openfpgaloader",
+    srcs = ["bin/openFPGALoader"],
+)
+
+filegroup(
+    name = "openfpgaloader_files",
+    srcs = ["libexec/openFPGALoader"] + _LIBS + glob(["share/openFPGALoader/**"]),
+)

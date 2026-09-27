@@ -1,0 +1,3 @@
+# SPDX-License-Identifier: Apache-2.0
+# BUILD files for the prebuilt tool bundles MODULE.bazel fetches.
+exports_files(glob(["*.BUILD.bazel"]))
