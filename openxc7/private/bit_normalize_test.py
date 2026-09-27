@@ -45,6 +45,17 @@ class BitNormalizeTest(unittest.TestCase):
         self.assertTrue(out.endswith(b"\xaa\x99\x55\x66"))
         self.assertIn(b"xc7a200tfbg484-2", out)
 
+    def test_zero_length_is_filled_in(self):
+        raw = bit(b"2026/09/27", b"15:34:10")
+        zeroed = raw.replace(b"e" + struct.pack(">I", 4), b"e" + struct.pack(">I", 0))
+        self.assertEqual(bit_normalize.normalize(zeroed), bit_normalize.normalize(raw))
+
+    def test_refuses_a_wrong_length(self):
+        raw = bit(b"2026/09/27", b"15:34:10")
+        wrong = raw.replace(b"e" + struct.pack(">I", 4), b"e" + struct.pack(">I", 9))
+        with self.assertRaises(ValueError):
+            bit_normalize.normalize(wrong)
+
     def test_refuses_other_files(self):
         with self.assertRaises(ValueError):
             bit_normalize.normalize(b"not a bitstream")
