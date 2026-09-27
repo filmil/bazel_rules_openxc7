@@ -1,0 +1,43 @@
+diff -ru a/fpga/assembler.cc b/fpga/assembler.cc
+--- a/fpga/assembler.cc
++++ b/fpga/assembler.cc
+@@ -33,6 +33,20 @@
+ #include "fpga/xilinx/arch-types.h"
+ #include "fpga/xilinx/bitstream.h"
+ 
++namespace {
++// The PUDC_B templates are formatted at run time, from a table. Under
++// clang, absl::StrFormat accepts only a format string known at compile
++// time, so these go through abseil's runtime API instead.
++template <typename... Args>
++std::string FormatRuntime(std::string_view format, const Args &...args) {
++  std::string out;
++  absl::FormatUntyped(absl::FormatRawSink(&out),
++                      absl::UntypedFormatSpec(format),
++                      {absl::FormatArg(args)...});
++  return out;
++}
++}  // namespace
++
+ struct TileSiteInfo {
+   std::string tile;
+   std::string site;
+@@ -226,15 +240,15 @@
+   if (pudc_b_is_on_an_hp_bank) {
+     const std::string partner = info.site == "IOB_Y0" ? "IOB_Y1" : "IOB_Y0";
+     for (const std::string_view line : kPUDCBPullUpHpFASMLinesTemplate) {
+-      AddFeature(out, absl::StrFormat(line, info.tile, info.site));
++      AddFeature(out, FormatRuntime(line, info.tile, info.site));
+     }
+     for (const std::string_view line : kPUDCBPullUpHpPartnerFASMLinesTemplate) {
+-      AddFeature(out, absl::StrFormat(line, info.tile, partner));
++      AddFeature(out, FormatRuntime(line, info.tile, partner));
+     }
+     return;
+   }
+   for (const std::string_view line : kPUDCBPullUpFASMLinesTemplate) {
+-    AddFeature(out, absl::StrFormat(line, info.tile, info.site));
++    AddFeature(out, FormatRuntime(line, info.tile, info.site));
+   }
+ }
+ 

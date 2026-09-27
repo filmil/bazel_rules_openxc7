@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+# openXC7's Project X-Ray database (CC0-1.0): the bit-level description of
+# each 7-series part. One family directory per filegroup, and one part.yaml
+# per supported part, which the toolchain uses to find the family's root.
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "artix7",
+    srcs = glob(["artix7/**"]),
+)
+
+filegroup(
+    name = "part_xc7a200tfbg484-2",
+    srcs = ["artix7/xc7a200tfbg484-2/part.yaml"],
+)

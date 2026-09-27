@@ -84,3 +84,46 @@ http_archive(
     strip_prefix = "oss-cad-suite",
     urls = ["https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2026-09-27/oss-cad-suite-linux-x64-20260927.tgz"],
 )
+
+# Tools built from source, for --@rules_openxc7//:tools=source. Each is
+# pinned to the revision openXC7's own source builder uses, so that the
+# database and the tools that read it agree (openXC7/toolchain-installer,
+# toolchain-sources-builder.sh).
+
+# fpga-assembler (Apache-2.0): FASM to .bit in one C++ binary, in place of
+# Project X-Ray's fasm2frames and xc7frames2bit. It is a Bazel module but in
+# no registry, and an override would bind only the root module, so it is
+# fetched here and given the dependencies its BUILD files name.
+bazel_dep(name = "abseil-cpp", version = "20260107.1")
+bazel_dep(name = "googletest", version = "1.17.0.bcr.2")
+bazel_dep(name = "rapidjson", version = "1.1.0.bcr.20250205")
+bazel_dep(name = "rules_cc", version = "0.2.25")
+bazel_dep(name = "rules_license", version = "1.0.0")
+
+# Its C++20 comes from its own .bazelrc, which a dependency's build never
+# reads, so each C++ target is given the standard itself.
+http_archive(
+    name = "fpga_assembler",
+    # And under clang, abseil's StrFormat refuses a format string that is not
+    # a compile-time constant; the patch formats fpga-as's run-time PUDC_B
+    # templates with abseil's runtime API instead.
+    patch_args = ["-p1"],
+    patch_cmds = [
+        "sed -i -E '/^cc_(library|binary|test)\\($/a\\    copts = [\"-std=c++20\"],' fpga/BUILD fpga/xilinx/BUILD",
+        # The binary is visible within its own repository only.
+        "sed -i -E '/^    name = \"fpga-as\",$/a\\    visibility = [\"//visibility:public\"],' fpga/BUILD",
+    ],
+    patches = ["//third_party/source:fpga_assembler_clang.patch"],
+    sha256 = "d4e2743daa4174e4bf51af5354910fec6d6e4e2c57065c8e4055e0d39d601712",
+    strip_prefix = "fpga-assembler-cf0e3f08455d502fc6392889c07f482ab8dd2d62",
+    urls = ["https://github.com/lromor/fpga-assembler/archive/cf0e3f08455d502fc6392889c07f482ab8dd2d62.tar.gz"],
+)
+
+# openXC7's Project X-Ray database (CC0-1.0).
+http_archive(
+    name = "prjxray_db",
+    build_file = "//third_party/source:prjxray_db.BUILD.bazel",
+    sha256 = "567457baa62403f7dd586abc4af2cd09b333c112033e484c0719fd64cd750bcc",
+    strip_prefix = "prjxray-db-517d66a383676cb971177ea92b0ff3b6ea6e8690",
+    urls = ["https://github.com/openXC7/prjxray-db/archive/517d66a383676cb971177ea92b0ff3b6ea6e8690.tar.gz"],
+)

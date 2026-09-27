@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# BUILD files for the tools MODULE.bazel fetches as source.
+exports_files(glob([
+    "*.BUILD.bazel",
+    "*.patch",
+]))
