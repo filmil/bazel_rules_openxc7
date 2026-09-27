@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: Apache-2.0
+# fpga-as and Project X-Ray's database, both built from source, against the
+# prebuilt flow: the same FASM must give the same configuration, up to the
+# per-frame ECC, which fpga-as leaves as zero.
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
+
+filegroup(
+    name = "blinky_fasm",
+    srcs = ["//tests/blinky:blinky_pnr"],
+    output_group = "fasm",
+)
+
+genrule(
+    name = "blinky_fpga_as",
+    srcs = [
+        ":blinky_fasm",
+        "@prjxray_db//:artix7",
+        "@prjxray_db//:part_xc7a200tfbg484-2",
+    ],
+    outs = ["blinky_fpga_as.raw.bit"],
+    cmd = "$(execpath @fpga_assembler//fpga:fpga-as)" +
+          " --prjxray_db_path=$$(dirname $$(dirname $(execpath @prjxray_db//:part_xc7a200tfbg484-2)))" +
+          " --part=xc7a200tfbg484-2 < $(execpath :blinky_fasm) > $@",
+    tools = ["@fpga_assembler//fpga:fpga-as"],
+)
+
+genrule(
+    name = "blinky_fpga_as_bit",
+    srcs = [":blinky_fpga_as.raw.bit"],
+    outs = ["blinky_fpga_as.bit"],
+    cmd = "$(execpath //openxc7/private:bit_normalize) $< $@",
+    tools = ["//openxc7/private:bit_normalize"],
+)
+
+sh_test(
+    name = "fpga_as_test",
+    size = "small",
+    srcs = ["fpga_as_test.sh"],
+    args = [
+        "$(rootpath :blinky_fpga_as.bit)",
+        "$(rootpath //tests/blinky:blinky_pnr)",
+    ],
+    data = [
+        ":blinky_fpga_as.bit",
+        "//tests/blinky:blinky_pnr",
+    ],
+)

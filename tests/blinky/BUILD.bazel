@@ -28,6 +28,8 @@ vivado_synthesis(
 vivado_place_and_route(
     name = "blinky_pnr",
     synthesis = ":blinky_synth",
+    # //tests/fpga_as compares its own bitstream with this one.
+    visibility = ["//tests:__subpackages__"],
 )
 
 #   bazel run //tests/blinky:blinky_prog      # into the FPGA, until power off
