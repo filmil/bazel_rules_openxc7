@@ -1,0 +1,88 @@
+# SPDX-License-Identifier: Apache-2.0
+# rules_vivado's own blinky and its Alinx AX7A200B constraints, built to a
+# bitstream with the open flow, with the rules_vivado target shapes.
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load(
+    "//openxc7:defs.bzl",
+    "vivado_place_and_route",
+    "vivado_program_device",
+    "vivado_program_flash",
+    "vivado_project",
+    "vivado_synthesis",
+)
+
+vivado_project(
+    name = "blinky",
+    srcs = ["blinky.sv"],
+    defines = ["FPGA_XILINX=1"],
+    part = "xc7a200tfbg484-2",
+    top_level = "up_counter",
+    xdcs = ["alinx-a200t-b.xdc"],
+)
+
+vivado_synthesis(
+    name = "blinky_synth",
+    project = ":blinky",
+)
+
+vivado_place_and_route(
+    name = "blinky_pnr",
+    synthesis = ":blinky_synth",
+)
+
+#   bazel run //tests/blinky:blinky_prog      # into the FPGA, until power off
+vivado_program_device(
+    name = "blinky_prog",
+    deps = [":blinky_pnr"],
+)
+
+#   bazel run //tests/blinky:blinky_flash     # into the board's QSPI flash
+vivado_program_flash(
+    name = "blinky_flash",
+    size = 32,
+    flash_part = "mt25ql256-spi-x1_x2_x4",
+    interface = "SPIx4",
+    deps = [":blinky_pnr"],
+)
+
+filegroup(
+    name = "blinky_frames",
+    srcs = [":blinky_pnr"],
+    output_group = "frames",
+)
+
+filegroup(
+    name = "blinky_xdc",
+    srcs = [":blinky_pnr"],
+    output_group = "xdc",
+)
+
+sh_test(
+    name = "bitstream_test",
+    size = "small",
+    srcs = ["bitstream_test.sh"],
+    args = [
+        "$(rootpath :blinky_pnr)",
+        "$(rootpath :blinky_frames)",
+        "$(rootpath :blinky_xdc)",
+    ],
+    data = [
+        ":blinky_frames",
+        ":blinky_pnr",
+        ":blinky_xdc",
+    ],
+)
+
+sh_test(
+    name = "program_test",
+    size = "small",
+    srcs = ["program_test.sh"],
+    args = [
+        "$(rootpath :blinky_prog)",
+        "$(rootpath :blinky_flash)",
+    ],
+    data = [
+        ":blinky_flash",
+        ":blinky_prog",
+    ],
+)
