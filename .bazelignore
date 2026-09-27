@@ -1,0 +1,4 @@
+# `integration` is its own Bazel module, built by the registry presubmit and
+# by `cd integration && bazel test //...`. Without this line the parent build
+# would try to load its BUILD.bazel, where `@rules_openxc7` does not resolve.
+integration

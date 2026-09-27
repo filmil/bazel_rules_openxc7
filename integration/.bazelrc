@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# My registry first, then the Bazel Central Registry. These are `common` and
+# not `build`, so that `bazel mod`, `bazel query` and `bazel fetch` consult the
+# same registries the build does.
+common \
+  --registry=https://raw.githubusercontent.com/filmil/bazel-registry/main \
+  --registry=https://bcr.bazel.build
+
+# Nothing is taken from the host: no C toolchain is detected, so a missing
+# hermetic one fails the build rather than falling back to the host's.
+common --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+build --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+
+# Add your local user settings to file `user.bazelrc`.
+try-import %workspace%/user.bazelrc
+
+# protobuf's upb keeps its extension registry in a linker section, and finds
+# it through __start_/__stop_ symbols. lld garbage-collects those unless told
+# not to, and protoc-gen-upb then fails to link. stardoc builds protobuf,
+# so this is needed for the documentation targets.
+build --linkopt=-Wl,-z,nostart-stop-gc
+build --host_linkopt=-Wl,-z,nostart-stop-gc

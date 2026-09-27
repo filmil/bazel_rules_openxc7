@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0
+# Generated reference documentation for every public .bzl file. It uses the
+# module's dev dependencies (stardoc, bazel_lib), so it lives apart from the
+# packages a user of the module loads.
+load("@bazel_lib//lib:write_source_files.bzl", "write_source_files")
+load("@stardoc//stardoc:stardoc.bzl", "stardoc")
+
+stardoc(
+    name = "defs_doc",
+    out = "gen.defs.md",
+    input = "//openxc7:defs.bzl",
+    deps = ["//openxc7:defs"],
+)
+
+# `bazel run //docs:update_docs` rewrites the .md files; `bazel test //...`
+# fails while one differs from what stardoc writes.
+write_source_files(
+    name = "update_docs",
+    files = {
+        "defs.md": ":defs_doc",
+    },
+)
