@@ -1,0 +1,131 @@
+# When run:
+# * runs tests to ensure that released version works.
+# * tags a new release based on main top of tree.
+# * builds a source bundle and uploads it into the release
+#
+# The workflow can be run manually, otherwise it runs once a week.
+name: Tag and Release
+
+
+on:
+  # Run by hand only, until the rules produce a bitstream (step 2 of the
+  # plan in README.md). Until then a release would publish an empty module
+  # to both registries. Put the monthly schedule back then:
+  #   schedule:
+  #     - cron: '0 0 20 * *'
+  workflow_dispatch:
+
+jobs:
+  # The monthly cron used to bump a version whether or not anything had landed,
+  # so the same tree was released again and again: v0.3.2, v0.3.3 and v0.3.4 all
+  # point at commit 1b8bcc7, as do v0.3.0/v0.3.1 and v0.2.38/v0.2.39. This job
+  # asks the only question that matters -- did anything get committed since the
+  # last release? -- and every job below hangs off the answer.
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.changes.outputs.changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # Full history and tags: `git describe` needs both, and the default
+          # shallow checkout has neither.
+          fetch-depth: 0
+      - name: Look for commits since the last release
+        id: changes
+        run: |
+          set -o errexit -o nounset -o pipefail
+          latest="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          if [ -z "${latest}" ]; then
+            echo "No tag yet; releasing."
+            echo "changed=true" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          if [ "$(git rev-list -n 1 "${latest}")" = "$(git rev-parse HEAD)" ]; then
+            echo "HEAD is already released as ${latest}. Nothing to release."
+            echo "changed=false" >> "${GITHUB_OUTPUT}"
+          else
+            echo "$(git rev-list --count "${latest}"..HEAD) commit(s) since ${latest}; releasing."
+            echo "changed=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+  tag:
+    needs: check
+    if: ${{ needs.check.outputs.changed == 'true' }}
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.tag_version.outputs.new_tag }}
+    steps:
+      - name: Setup bazel
+        uses: bazel-contrib/setup-bazel@0.19.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Cache
+        uses: actions/cache@v6
+        with:
+          path: "~/.cache/bazel"
+          key: ${{ runner.os }}-bazel-${{ hashFiles('MODULE.bazel', '**/*.lock.tsv') }}
+          restore-keys: |
+            ${{ runner.os }}-bazel-
+      - name: "Test"
+        run: "bazel test --test_output=errors //..."
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          release_branches: main
+          # Without this the action bumps the patch version on every run, even
+          # when no commit landed since the last tag. The cron then released the
+          # same tree again and again. `false` makes the action emit an empty
+          # `new_tag` when no commit asks for a release, and the guards below
+          # then skip the release and the publication.
+          default_bump: false
+      - name: Create a GitHub release
+        if: ${{ steps.tag_version.outputs.new_tag != '' }}
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.tag_version.outputs.new_tag }}
+          generateReleaseNotes: true
+      - name: Get release tag
+        if: ${{ steps.tag_version.outputs.new_tag != '' }}
+        id: get_version
+        run: echo "VERSION=${{ steps.tag_version.outputs.new_tag }}" >> $GITHUB_ENV
+      - name: Get repo name
+        if: ${{ steps.tag_version.outputs.new_tag != '' }}
+        id: get_repo_name
+        run: echo "REPO_NAME=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')" >> $GITHUB_ENV
+      - name: "Publish source archive"
+        if: ${{ steps.tag_version.outputs.new_tag != '' }}
+        uses: thedoctor0/zip-release@0.7.6
+        with:
+          type: 'zip'
+          filename: "${{ env.REPO_NAME }}-${{ env.VERSION }}.zip"
+          exclusions: '*.git* /*node_modules/* .editorconfig /bazel-*'
+      - name: "Upload source archive"
+        if: ${{ steps.tag_version.outputs.new_tag != '' }}
+        uses: ncipollo/release-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag: ${{ steps.tag_version.outputs.new_tag }}
+          allowUpdates: true
+          artifacts: "${{ env.REPO_NAME }}-${{ env.VERSION }}.zip"
+
+
+  # `publish` needs `tag`, so a skipped `tag` skips it too; the guard here
+  # additionally covers a `tag` job that ran but produced no new tag.
+  publish:
+    needs: tag
+    if: ${{ needs.tag.outputs.tag_name != '' }}
+    uses: ./.github/workflows/publish.yml
+    with:
+      tag_name: ${{ needs.tag.outputs.tag_name }}
+    secrets:
+      BCR_PUBLISH_TOKEN: ${{ secrets.BCR_PUBLISH_TOKEN }}
+

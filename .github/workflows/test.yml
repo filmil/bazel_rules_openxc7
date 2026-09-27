@@ -1,0 +1,49 @@
+name: Test
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Once a week, so a break caused by a moving dependency is noticed even
+    # when nothing lands.
+    - cron: "43 7 * * 0"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup bazel
+        uses: bazel-contrib/setup-bazel@0.19.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
+
+      # The cache key carries the current UTC date, so an entry is only
+      # restored on the day it was written. That gives the build cache a 24
+      # hour lifetime. The restore-keys line still seeds a new day from the
+      # previous day's entry, so the first build of the day starts warm.
+      - name: Compute the daily cache key
+        id: cachekey
+        run: echo "day=$(date -u +%Y-%m-%d)" >> "${GITHUB_OUTPUT}"
+
+      - name: Cache build artifacts
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/bazel
+          key: ${{ runner.os }}-bazel-${{ steps.cachekey.outputs.day }}
+          restore-keys: |
+            ${{ runner.os }}-bazel-
+
+      - name: Build
+        run: bazel build //...
+
+      - name: Test
+        run: bazel test //...
