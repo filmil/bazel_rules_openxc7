@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The Bazel Central Registry presubmit builds this module against the
+# published rules_openxc7 archive. `.bcr/presubmit.yml` names it by the
+# `module_path: "integration"` key.
+#
+# The version below and the override are both replaced by the registry
+# presubmit, which points the dependency at the release being published.
+# Locally the override makes the module resolve to the parent directory, so
+# `cd integration && bazel test //...` exercises the working tree.
+
+module(
+    name = "rules_openxc7_integration",
+    version = "0.0.0",
+)
+
+bazel_dep(name = "rules_openxc7", version = "0.0.0")
+local_path_override(
+    module_name = "rules_openxc7",
+    path = "..",
+)
+
+bazel_dep(name = "bazel_skylib", version = "1.9.2")

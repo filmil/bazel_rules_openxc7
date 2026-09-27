@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
+
+# Checks that a consumer can depend on the published module and load its
+# public API. This is what the Bazel Central Registry presubmit runs.
+build_test(
+    name = "smoke_test",
+    targets = [
+        "@rules_openxc7//openxc7:defs",
+    ],
+)
