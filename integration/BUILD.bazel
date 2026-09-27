@@ -1,12 +1,45 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
+load(
+    "@rules_openxc7//openxc7:defs.bzl",
+    "vivado_place_and_route",
+    "vivado_program_device",
+    "vivado_project",
+    "vivado_synthesis",
+)
 
-# Checks that a consumer can depend on the published module and load its
-# public API. This is what the Bazel Central Registry presubmit runs.
+# A consumer's view of the module: rules_vivado's blinky, built to a
+# bitstream with the prebuilt open toolchain. This is what the Bazel
+# Central Registry presubmit runs.
+vivado_project(
+    name = "blinky",
+    srcs = ["blinky.sv"],
+    part = "xc7a200tfbg484-2",
+    top_level = "up_counter",
+    xdcs = ["alinx-a200t-b.xdc"],
+)
+
+vivado_synthesis(
+    name = "blinky_synth",
+    project = ":blinky",
+)
+
+vivado_place_and_route(
+    name = "blinky_pnr",
+    synthesis = ":blinky_synth",
+)
+
+vivado_program_device(
+    name = "blinky_prog",
+    deps = [":blinky_pnr"],
+)
+
 build_test(
     name = "smoke_test",
     targets = [
+        ":blinky_pnr",
+        ":blinky_prog",
         "@rules_openxc7//openxc7:defs",
     ],
 )
