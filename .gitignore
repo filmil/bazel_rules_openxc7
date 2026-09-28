@@ -4,3 +4,4 @@ MODULE.bazel.lock
 .vscode
 local
 /integration/MODULE.bazel.lock
+__pycache__/

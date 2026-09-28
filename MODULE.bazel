@@ -9,6 +9,9 @@ bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "rules_shell", version = "0.8.0")
 bazel_dep(name = "rules_python", version = "2.3.4")
 
+# rules_vivado, for //vivado: an emulated Vivado that its rules can run on.
+bazel_dep(name = "rules_vivado", version = "3.14.0")
+
 # A hermetic C and C++ toolchain for this repository's own builds: LLVM,
 # with a pinned Debian sysroot, so nothing is compiled against the host's
 # compiler, headers or libraries. It is a dev dependency: toolchains_llvm
@@ -60,6 +63,13 @@ bazel_dep(name = "stardoc", version = "0.8.1", dev_dependency = True)
 
 # The toolchains the rules resolve; --@rules_openxc7//:tools picks one.
 register_toolchains("//openxc7/toolchains:all")
+
+# The emulated Vivado, for this module's own tests only: a user registers it
+# in their root module when they want it (vivado/BUILD.bazel says how).
+register_toolchains(
+    "//vivado:all",
+    dev_dependency = True,
+)
 
 # Prebuilt tools, fetched by sha256. Pinned to one dated release of each
 # bundle; the dates move together, and README.md says which tools and
