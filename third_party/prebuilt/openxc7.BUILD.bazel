@@ -59,3 +59,20 @@ filegroup(
     name = "part_xc7a200tfbg484-2",
     srcs = ["share/nextpnr/external/prjxray-db/artix7/xc7a200tfbg484-2/part.yaml"],
 )
+
+# The bundle's top directories as whole directories, for rules_openxc7's
+# emulated Vivado runner. rules_vivado's synthesis action copies every
+# .tcl, .v, .sv and .vhd file it finds under its working directory, the
+# runner's runfiles included; a directory input is placed as one symlink,
+# which `find` does not descend into. The bundle is pinned by sha256, so a
+# directory input's weaker change tracking costs nothing.
+filegroup(
+    name = "tree",
+    srcs = [
+        "bin",
+        "chipdb",
+        "lib",
+        "libexec",
+        "share",
+    ],
+)

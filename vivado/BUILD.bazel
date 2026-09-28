@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+# An emulated Vivado for rules_vivado. Register it in your root MODULE.bazel,
+# and rules_vivado's own rules (vivado_project, vivado_synthesis,
+# vivado_place_and_route) run on Yosys, nextpnr and Project X-Ray instead of
+# Vivado, with no change to any BUILD file:
+#
+#   bazel_dep(name = "rules_openxc7", version = "...")
+#   register_toolchains("@rules_openxc7//vivado:all")
+#
+# `--@rules_openxc7//vivado:emulate=false` turns it off again, so that the
+# toolchain rules_vivado itself registers (Docker, host or hermetic Vivado)
+# applies. It is not registered by this module for its users: a project
+# that depends on both modules would otherwise lose Vivado without asking.
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("@rules_vivado//internal:toolchain.bzl", "vivado_toolchain")
+load("//vivado/private:runner.bzl", "openxc7_vivado_runner")
+
+package(default_visibility = ["//visibility:public"])
+
+bool_flag(
+    name = "emulate",
+    build_setting_default = True,
+)
+
+config_setting(
+    name = "emulating",
+    flag_values = {":emulate": "True"},
+)
+
+openxc7_vivado_runner(
+    name = "runner",
+)
+
+vivado_toolchain(
+    name = "openxc7_vivado",
+    mode = "host",
+    runner = ":runner",
+    # Not a Vivado installation: the runner recognises the command lines
+    # rules_vivado builds from this path and runs the emulation instead.
+    vivado_path = "/rules_openxc7/vivado",
+    vivado_version = "openxc7",
+)
+
+toolchain(
+    name = "openxc7_vivado_toolchain",
+    target_settings = [":emulating"],
+    toolchain = ":openxc7_vivado",
+    toolchain_type = "@rules_vivado//toolchains:toolchain_type",
+)

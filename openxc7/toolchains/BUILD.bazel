@@ -24,6 +24,10 @@ openxc7_toolchain(
         "@openxc7_prebuilt_linux_x86_64//:part_xc7a200tfbg484-2": "xc7a200tfbg484-2",
     },
     prjxray_db = ["@openxc7_prebuilt_linux_x86_64//:prjxray_db_artix7"],
+    trees = [
+        "@openxc7_prebuilt_linux_x86_64//:tree",
+        "@oss_cad_suite_linux_x86_64//:tree",
+    ],
     xc7frames2bit = "@openxc7_prebuilt_linux_x86_64//:xc7frames2bit",
     xc7frames2bit_files = ["@openxc7_prebuilt_linux_x86_64//:xc7frames2bit_files"],
     yosys = "@oss_cad_suite_linux_x86_64//:yosys",

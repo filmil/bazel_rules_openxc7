@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_test.bzl", "py_test")
+
+package(default_visibility = ["//vivado:__subpackages__"])
+
+exports_files([
+    "runner.sh.tpl",
+    "vivado_emulator.py",
+])
+
+# Vivado's batch mode, in a Tcl interpreter, on the openxc7 tools.
+py_binary(
+    name = "vivado_emulator",
+    srcs = ["vivado_emulator.py"],
+    deps = [
+        "//openxc7/private:bit_normalize_lib",
+        "//openxc7/private:xdc_translate_lib",
+    ],
+)
+
+py_test(
+    name = "vivado_emulator_test",
+    size = "small",
+    srcs = ["vivado_emulator_test.py"],
+    data = ["vivado_emulator.py"],
+    deps = [":vivado_emulator"],
+)

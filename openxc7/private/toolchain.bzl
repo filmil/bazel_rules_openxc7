@@ -38,6 +38,9 @@ def _openxc7_toolchain_impl(ctx):
         chipdbs = chipdbs,
         parts = parts,
         prjxray_db = depset(ctx.files.prjxray_db),
+        # The tools' whole directories, for runners that must not expose
+        # the tools' individual files (see //vivado/private:runner.bzl).
+        trees = depset(ctx.files.trees),
     ))]
 
 _EXE = dict(executable = True, cfg = "exec", allow_files = True)
@@ -65,5 +68,9 @@ openxc7_toolchain = rule(
             doc = "A part's part.yaml in the Project X-Ray database -> the part.",
         ),
         "prjxray_db": attr.label_list(allow_files = True, doc = "The Project X-Ray database files the parts need."),
+        "trees": attr.label_list(
+            allow_files = True,
+            doc = "The directories every tool above lies in, as directory inputs.",
+        ),
     },
 )
