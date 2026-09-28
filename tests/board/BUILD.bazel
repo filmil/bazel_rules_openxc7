@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: Apache-2.0
+# A design for the open flow's first board check: README.md, "On the board".
+load(
+    "//openxc7:defs.bzl",
+    "vivado_place_and_route",
+    "vivado_project",
+    "vivado_synthesis",
+)
+
+vivado_project(
+    name = "uart_hello",
+    srcs = ["uart_hello.v"],
+    part = "xc7a200tfbg484-2",
+    top_level = "uart_hello",
+    xdcs = ["ax7a200b.xdc"],
+)
+
+vivado_synthesis(
+    name = "uart_hello_synth",
+    project = ":uart_hello",
+)
+
+vivado_place_and_route(
+    name = "uart_hello_pnr",
+    synthesis = ":uart_hello_synth",
+)
