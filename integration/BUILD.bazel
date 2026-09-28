@@ -8,6 +8,12 @@ load(
     "vivado_project",
     "vivado_synthesis",
 )
+load(
+    "@rules_vivado//build/vivado:rules.bzl",
+    vivado_emulated_place_and_route = "vivado_place_and_route",
+    vivado_emulated_project = "vivado_project",
+    vivado_emulated_synthesis = "vivado_synthesis",
+)
 
 # A consumer's view of the module: rules_vivado's blinky, built to a
 # bitstream with the prebuilt open toolchain. This is what the Bazel
@@ -35,11 +41,32 @@ vivado_program_device(
     deps = [":blinky_pnr"],
 )
 
+# The same design through rules_vivado's own rules, which run on the
+# emulated Vivado that MODULE.bazel registers.
+vivado_emulated_project(
+    name = "blinky_emulated",
+    srcs = ["blinky.sv"],
+    part = "xc7a200tfbg484-2",
+    top_level = "up_counter",
+    xdcs = ["alinx-a200t-b.xdc"],
+)
+
+vivado_emulated_synthesis(
+    name = "blinky_emulated_synth",
+    project = ":blinky_emulated",
+)
+
+vivado_emulated_place_and_route(
+    name = "blinky_emulated_pnr",
+    synthesis = ":blinky_emulated_synth",
+)
+
 build_test(
     name = "smoke_test",
     targets = [
         ":blinky_pnr",
         ":blinky_prog",
+        ":blinky_emulated_pnr",
         "@rules_openxc7//openxc7:defs",
     ],
 )

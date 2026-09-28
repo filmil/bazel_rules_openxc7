@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+# rules_vivado's own rules, loaded from @rules_vivado and unchanged, built
+# with the emulated Vivado of //vivado, which this module registers for its
+# tests. This is what a user of rules_vivado gets by registering it.
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load(
+    "@rules_vivado//build/vivado:rules.bzl",
+    "vivado_place_and_route",
+    "vivado_project",
+    "vivado_synthesis",
+)
+
+vivado_project(
+    name = "blinky",
+    srcs = ["blinky.sv"],
+    defines = ["FPGA_XILINX=1"],
+    part = "xc7a200tfbg484-2",
+    top_level = "up_counter",
+    xdcs = ["alinx-a200t-b.xdc"],
+)
+
+vivado_synthesis(
+    name = "blinky_synth",
+    project = ":blinky",
+)
+
+vivado_place_and_route(
+    name = "blinky_pnr",
+    synthesis = ":blinky_synth",
+)
+
+# rules_vivado's rules on the emulated Vivado and rules_openxc7's own rules
+# build one design with the same tools, so the configuration data must be
+# identical; only the header's design name differs.
+sh_test(
+    name = "same_bitstream_test",
+    size = "small",
+    srcs = ["same_bitstream_test.sh"],
+    # rules_vivado's rule gives its work directories as well as the .bit,
+    # so the reference goes first and the script finds the .bit in the rest.
+    args = [
+        "$(rootpath //tests/blinky:blinky_pnr)",
+        "$(rootpaths :blinky_pnr)",
+    ],
+    data = [
+        ":blinky_pnr",
+        "//tests/blinky:blinky_pnr",
+    ],
+)
