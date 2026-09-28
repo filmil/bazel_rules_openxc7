@@ -24,8 +24,9 @@ The first part is the xc7a200tfbg484-2, on the Alinx AX7A200B.
 
 **Status:** steps 1 and 2 of the plan below. Verilog and SystemVerilog
 build to a bitstream for the xc7a200tfbg484-2 with prebuilt tools, and
-the bitstream is programmed with openFPGALoader. Nothing has been tried on
-a board yet.
+the bitstream is programmed with openFPGALoader. The same tools also run
+under rules_vivado's own rules, as an emulated Vivado toolchain. Nothing
+has been tried on a board yet; "On the board" below says what is ready.
 
 ## Using it
 
@@ -78,7 +79,43 @@ AX7A200B constraints, unchanged.
 | `vivado_program_flash` | Same, plus `cable`. `flash_part`, `size`, `interface` and `format` have no effect: openFPGALoader identifies the flash itself. |
 | the rest | Not provided: simulation, IP, ILA, the GUI. |
 
-### Constraints
+### As a Vivado toolchain for rules_vivado
+
+A project that already uses rules_vivado can keep its `load` lines and
+BUILD files, and register this module's emulated Vivado instead:
+
+```python
+# MODULE.bazel
+bazel_dep(name = "rules_openxc7", version = "<version>")
+bazel_dep(name = "rules_vivado", version = "3.14.0")
+
+register_toolchains("@rules_openxc7//vivado:all")
+```
+
+rules_vivado's `vivado_project`, `vivado_synthesis` and
+`vivado_place_and_route` then run on the open tools.
+The toolchain's runner recognises the Vivado command lines those rules
+build, and runs their Tcl scripts in a Tcl interpreter whose Vivado
+commands (`create_project`, `read_verilog`, `synth_design`,
+`launch_runs`, `write_bitstream` and the rest that the rules use) call
+Yosys, nextpnr and Project X-Ray.
+Both Vivado's project mode and its batch mode are emulated.
+A design gives the same configuration data either way:
+`tests/vivado` builds rules_vivado's blinky with rules_vivado's rules on
+the emulated toolchain, and checks it against `tests/blinky`.
+
+`--@rules_openxc7//vivado:emulate=false` turns the emulation off, so
+that the toolchain rules_vivado registers (Docker, host or hermetic
+Vivado) applies again.
+This module does not register the emulation for its users: a project
+that depends on both modules would otherwise lose Vivado without
+asking.
+
+What is not emulated fails with a message that says so: VHDL, IP,
+simulation, the hardware manager, and any Vivado command the Tcl uses
+that the list above does not cover.
+
+
 
 nextpnr reads a subset of XDC: `set_property` on `get_ports` and
 `get_cells`, and `create_clock`. It rejects `[all_inputs]` and
@@ -98,7 +135,15 @@ keep only the input's base name, so the same design gives the same bytes
 in every build: fastbuild and `-c opt` bitstreams of `tests/blinky`
 compare equal.
 
-## Plan
+### On the board
+
+`tests/board` is the first design meant for hardware: on the Alinx
+AX7A200B it sends `openxc7 hello NNNN` over the UART at 115200 8N1 about
+ten times a second, and counts on the four LEDs.
+It meets timing at 200 MHz, and a simulation prints the lines it should.
+It has not been programmed into a board yet.
+
+
 
 1. The repository scaffold, per the
    [ai-coding-sop](https://github.com/filmil/ai-coding-sop): this.
