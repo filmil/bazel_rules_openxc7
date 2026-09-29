@@ -3,6 +3,7 @@
 [![Publish on Bazel Central Registry](https://github.com/filmil/bazel_rules_openxc7/actions/workflows/publish-bcr.yml/badge.svg)](https://github.com/filmil/bazel_rules_openxc7/actions/workflows/publish-bcr.yml)
 [![Publish to my Bazel registry](https://github.com/filmil/bazel_rules_openxc7/actions/workflows/publish.yml/badge.svg)](https://github.com/filmil/bazel_rules_openxc7/actions/workflows/publish.yml)
 
+
 # bazel_rules_openxc7
 
 Bazel rules for AMD/Xilinx 7-series FPGAs, built with the open toolchain
