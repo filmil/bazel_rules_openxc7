@@ -14,6 +14,14 @@ on:
   #   schedule:
   #     - cron: '0 0 20 * *'
   workflow_dispatch:
+    inputs:
+      force_publish:
+        description: >-
+          Release and publish even when no commit asks for a version bump, or
+          when HEAD is already released. Bumps the patch version.
+        type: boolean
+        default: false
+        required: false
 
 jobs:
   # The monthly cron used to bump a version whether or not anything had landed,
@@ -36,6 +44,11 @@ jobs:
         id: changes
         run: |
           set -o errexit -o nounset -o pipefail
+          if [ "${{ inputs.force_publish }}" = "true" ]; then
+            echo "Forced publish requested; releasing."
+            echo "changed=true" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
           latest="$(git describe --tags --abbrev=0 2>/dev/null || true)"
           if [ -z "${latest}" ]; then
             echo "No tag yet; releasing."
@@ -80,12 +93,13 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           release_branches: main
-          # Without this the action bumps the patch version on every run, even
-          # when no commit landed since the last tag. The cron then released the
-          # same tree again and again. `false` makes the action emit an empty
-          # `new_tag` when no commit asks for a release, and the guards below
-          # then skip the release and the publication.
-          default_bump: false
+          # Normally `false`, so the action emits an empty `new_tag` when no
+          # commit asks for a release and the guards below skip everything.
+          # The Run workflow button can override that with `force_publish`,
+          # which bumps the patch version regardless. That is the escape hatch
+          # for commits whose messages conventional-commit parsing does not
+          # recognise as a release trigger.
+          default_bump: ${{ inputs.force_publish && 'patch' || 'false' }}
       - name: Create a GitHub release
         if: ${{ steps.tag_version.outputs.new_tag != '' }}
         uses: ncipollo/release-action@v1
