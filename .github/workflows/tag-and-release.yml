@@ -67,26 +67,15 @@ jobs:
     needs: check
     if: ${{ needs.check.outputs.changed == 'true' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       tag_name: ${{ steps.tag_version.outputs.new_tag }}
     steps:
-      - name: Setup bazel
-        uses: bazel-contrib/setup-bazel@0.19.0
-        with:
-          bazelisk-cache: true
-          disk-cache: ${{ github.workflow }}
-          repository-cache: true
       - name: Checkout
-        uses: actions/checkout@v7
-      - name: Cache
-        uses: actions/cache@v6
+        uses: actions/checkout@v4
         with:
-          path: "~/.cache/bazel"
-          key: ${{ runner.os }}-bazel-${{ hashFiles('MODULE.bazel', '**/*.lock.tsv') }}
-          restore-keys: |
-            ${{ runner.os }}-bazel-
-      - name: "Test"
-        run: "bazel test --test_output=errors //..."
+          fetch-depth: 0
       - name: Bump version and push tag
         id: tag_version
         uses: mathieudutour/github-tag-action@v6.2
@@ -100,46 +89,29 @@ jobs:
           # for commits whose messages conventional-commit parsing does not
           # recognise as a release trigger.
           default_bump: ${{ inputs.force_publish && 'patch' || 'false' }}
-      - name: Create a GitHub release
-        if: ${{ steps.tag_version.outputs.new_tag != '' }}
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ steps.tag_version.outputs.new_tag }}
-          generateReleaseNotes: true
-      - name: Get release tag
-        if: ${{ steps.tag_version.outputs.new_tag != '' }}
-        id: get_version
-        run: echo "VERSION=${{ steps.tag_version.outputs.new_tag }}" >> $GITHUB_ENV
-      - name: Get repo name
-        if: ${{ steps.tag_version.outputs.new_tag != '' }}
-        id: get_repo_name
-        run: echo "REPO_NAME=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')" >> $GITHUB_ENV
-      - name: "Publish source archive"
-        if: ${{ steps.tag_version.outputs.new_tag != '' }}
-        uses: thedoctor0/zip-release@0.7.6
-        with:
-          type: 'zip'
-          filename: "${{ env.REPO_NAME }}-${{ env.VERSION }}.zip"
-          exclusions: '*.git* /*node_modules/* .editorconfig /bazel-*'
-      - name: "Upload source archive"
-        if: ${{ steps.tag_version.outputs.new_tag != '' }}
-        uses: ncipollo/release-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag: ${{ steps.tag_version.outputs.new_tag }}
-          allowUpdates: true
-          artifacts: "${{ env.REPO_NAME }}-${{ env.VERSION }}.zip"
 
-
-  # `publish` needs `tag`, so a skipped `tag` skips it too; the guard here
-  # additionally covers a `tag` job that ran but produced no new tag.
-  publish:
+  release:
     needs: tag
+    if: ${{ needs.tag.outputs.tag_name != '' }}
+    permissions:
+      contents: write      # upload release files
+      id-token: write      # attest provenance
+      attestations: write  # attest provenance
+    uses: bazel-contrib/.github/.github/workflows/release_ruleset.yaml@v7.7.0
+    with:
+      tag_name: ${{ needs.tag.outputs.tag_name }}
+      release_files: bazel_rules_openxc7-${{ needs.tag.outputs.tag_name }}.zip
+      prerelease: false
+
+  # `publish` needs `tag` and `release`, so a skipped `tag` skips it too;
+  # the guard here additionally covers a `tag` job that ran but produced no tag.
+  publish:
+    needs: [tag, release]
     if: ${{ needs.tag.outputs.tag_name != '' }}
     uses: ./.github/workflows/publish.yml
     with:
       tag_name: ${{ needs.tag.outputs.tag_name }}
     secrets:
       BCR_PUBLISH_TOKEN: ${{ secrets.BCR_PUBLISH_TOKEN }}
+
 
