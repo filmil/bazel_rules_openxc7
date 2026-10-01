@@ -21,6 +21,7 @@ local_path_override(
 )
 
 bazel_dep(name = "bazel_skylib", version = "1.9.2")
+bazel_dep(name = "rules_shell", version = "0.8.0")
 
 # rules_vivado's own rules, on the emulated Vivado a user registers.
 bazel_dep(name = "rules_vivado", version = "3.14.0")
