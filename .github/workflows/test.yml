@@ -42,8 +42,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bazel-
 
+      - name: Check BCR dependencies
+        run: bazel --ignore_all_rc_files mod graph --registry=https://bcr.bazel.build
+
       - name: Build
         run: bazel build //...
 
       - name: Test
         run: bazel test //...
+
+      - name: Test integration module
+        run: cd integration && bazel test //...
