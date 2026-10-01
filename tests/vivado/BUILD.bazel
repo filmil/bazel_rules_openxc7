@@ -47,3 +47,68 @@ sh_test(
         "//tests/blinky:blinky_pnr",
     ],
 )
+
+vivado_project(
+    name = "blinky_vhdl",
+    srcs = ["//tests/blinky:blinky_vhdl.vhd"],
+    part = "xc7a200tfbg484-2",
+    top_level = "up_counter_vhdl",
+    xdcs = ["alinx-a200t-b.xdc"],
+)
+
+vivado_synthesis(
+    name = "blinky_vhdl_synth",
+    project = ":blinky_vhdl",
+)
+
+vivado_place_and_route(
+    name = "blinky_vhdl_pnr",
+    synthesis = ":blinky_vhdl_synth",
+)
+
+sh_test(
+    name = "same_bitstream_test_vhdl",
+    size = "small",
+    srcs = ["same_bitstream_test.sh"],
+    args = [
+        "$(rootpath //tests/blinky:blinky_vhdl_pnr)",
+        "$(rootpaths :blinky_vhdl_pnr)",
+    ],
+    data = [
+        ":blinky_vhdl_pnr",
+        "//tests/blinky:blinky_vhdl_pnr",
+    ],
+)
+
+vivado_project(
+    name = "blinky_sv",
+    srcs = ["//tests/blinky:blinky_sv.sv"],
+    env = {"OPENXC7_SYSTEMVERILOG_PARSER": "slang"},
+    part = "xc7a200tfbg484-2",
+    top_level = "up_counter_sv",
+    xdcs = ["alinx-a200t-b.xdc"],
+)
+
+vivado_synthesis(
+    name = "blinky_sv_synth",
+    project = ":blinky_sv",
+)
+
+vivado_place_and_route(
+    name = "blinky_sv_pnr",
+    synthesis = ":blinky_sv_synth",
+)
+
+sh_test(
+    name = "same_bitstream_test_sv",
+    size = "small",
+    srcs = ["same_bitstream_test.sh"],
+    args = [
+        "$(rootpath //tests/blinky:blinky_sv_pnr)",
+        "$(rootpaths :blinky_sv_pnr)",
+    ],
+    data = [
+        ":blinky_sv_pnr",
+        "//tests/blinky:blinky_sv_pnr",
+    ],
+)
