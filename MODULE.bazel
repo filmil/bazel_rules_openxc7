@@ -65,13 +65,6 @@ bazel_dep(name = "stardoc", version = "0.8.1", dev_dependency = True)
 # The toolchains the rules resolve; --@rules_openxc7//:tools picks one.
 register_toolchains("//openxc7/toolchains:all")
 
-# The emulated Vivado, for this module's own tests only: a user registers it
-# in their root module when they want it (vivado/BUILD.bazel says how).
-register_toolchains(
-    "//vivado:all",
-    dev_dependency = True,
-)
-
 # Prebuilt tools, fetched by sha256. Pinned to one dated release of each
 # bundle; the dates move together, and README.md says which tools and
 # versions each holds. Old dated releases of both are pruned in time, so

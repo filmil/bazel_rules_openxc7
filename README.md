@@ -102,9 +102,9 @@ commands (`create_project`, `read_verilog`, `read_vhdl`, `synth_design`,
 Yosys, nextpnr and Project X-Ray.
 Both Vivado's project mode and its batch mode are emulated.
 A design gives the same configuration data either way:
-`tests/vivado` builds rules_vivado's blinky designs (Verilog, VHDL, and
+`integration` builds rules_vivado's blinky designs (Verilog, VHDL, and
 SystemVerilog with slang) with rules_vivado's rules on the emulated
-toolchain, and checks them against `tests/blinky`.
+toolchain, and checks them against the openxc7 bitstreams.
 
 `--@rules_openxc7//vivado:emulate=false` turns the emulation off, so
 that the toolchain rules_vivado registers (Docker, host or hermetic

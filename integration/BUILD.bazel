@@ -8,6 +8,7 @@ load(
     "vivado_project",
     "vivado_synthesis",
 )
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
 load(
     "@rules_vivado//build/vivado:rules.bzl",
     vivado_emulated_place_and_route = "vivado_place_and_route",
@@ -21,6 +22,7 @@ load(
 vivado_project(
     name = "blinky",
     srcs = ["blinky.sv"],
+    defines = ["FPGA_XILINX=1"],
     part = "xc7a200tfbg484-2",
     top_level = "up_counter",
     xdcs = ["alinx-a200t-b.xdc"],
@@ -46,6 +48,7 @@ vivado_program_device(
 vivado_emulated_project(
     name = "blinky_emulated",
     srcs = ["blinky.sv"],
+    defines = ["FPGA_XILINX=1"],
     part = "xc7a200tfbg484-2",
     top_level = "up_counter",
     xdcs = ["alinx-a200t-b.xdc"],
@@ -61,12 +64,137 @@ vivado_emulated_place_and_route(
     synthesis = ":blinky_emulated_synth",
 )
 
+# rules_vivado's rules on the emulated Vivado and rules_openxc7's own rules
+# build one design with the same tools, so the configuration data must be
+# identical; only the header's design name differs.
+sh_test(
+    name = "same_bitstream_test",
+    size = "small",
+    srcs = ["same_bitstream_test.sh"],
+    # rules_vivado's rule gives its work directories as well as the .bit,
+    # so the reference goes first and the script finds the .bit in the rest.
+    args = [
+        "$(rootpath :blinky_pnr)",
+        "$(rootpaths :blinky_emulated_pnr)",
+    ],
+    data = [
+        ":blinky_emulated_pnr",
+        ":blinky_pnr",
+    ],
+)
+
+vivado_project(
+    name = "blinky_vhdl",
+    srcs = ["blinky_vhdl.vhd"],
+    part = "xc7a200tfbg484-2",
+    top_level = "up_counter_vhdl",
+    xdcs = ["alinx-a200t-b.xdc"],
+)
+
+vivado_synthesis(
+    name = "blinky_vhdl_synth",
+    project = ":blinky_vhdl",
+)
+
+vivado_place_and_route(
+    name = "blinky_vhdl_pnr",
+    synthesis = ":blinky_vhdl_synth",
+)
+
+vivado_emulated_project(
+    name = "blinky_vhdl_emulated",
+    srcs = ["blinky_vhdl.vhd"],
+    part = "xc7a200tfbg484-2",
+    top_level = "up_counter_vhdl",
+    xdcs = ["alinx-a200t-b.xdc"],
+)
+
+vivado_emulated_synthesis(
+    name = "blinky_vhdl_emulated_synth",
+    project = ":blinky_vhdl_emulated",
+)
+
+vivado_emulated_place_and_route(
+    name = "blinky_vhdl_emulated_pnr",
+    synthesis = ":blinky_vhdl_emulated_synth",
+)
+
+sh_test(
+    name = "same_bitstream_test_vhdl",
+    size = "small",
+    srcs = ["same_bitstream_test.sh"],
+    args = [
+        "$(rootpath :blinky_vhdl_pnr)",
+        "$(rootpaths :blinky_vhdl_emulated_pnr)",
+    ],
+    data = [
+        ":blinky_vhdl_emulated_pnr",
+        ":blinky_vhdl_pnr",
+    ],
+)
+
+vivado_project(
+    name = "blinky_sv",
+    srcs = ["blinky_sv.sv"],
+    part = "xc7a200tfbg484-2",
+    systemverilog_parser = "slang",
+    top_level = "up_counter_sv",
+    xdcs = ["alinx-a200t-b.xdc"],
+)
+
+vivado_synthesis(
+    name = "blinky_sv_synth",
+    project = ":blinky_sv",
+)
+
+vivado_place_and_route(
+    name = "blinky_sv_pnr",
+    synthesis = ":blinky_sv_synth",
+)
+
+vivado_emulated_project(
+    name = "blinky_sv_emulated",
+    srcs = ["blinky_sv.sv"],
+    env = {"OPENXC7_SYSTEMVERILOG_PARSER": "slang"},
+    part = "xc7a200tfbg484-2",
+    top_level = "up_counter_sv",
+    xdcs = ["alinx-a200t-b.xdc"],
+)
+
+vivado_emulated_synthesis(
+    name = "blinky_sv_emulated_synth",
+    project = ":blinky_sv_emulated",
+)
+
+vivado_emulated_place_and_route(
+    name = "blinky_sv_emulated_pnr",
+    synthesis = ":blinky_sv_emulated_synth",
+)
+
+sh_test(
+    name = "same_bitstream_test_sv",
+    size = "small",
+    srcs = ["same_bitstream_test.sh"],
+    args = [
+        "$(rootpath :blinky_sv_pnr)",
+        "$(rootpaths :blinky_sv_emulated_pnr)",
+    ],
+    data = [
+        ":blinky_sv_emulated_pnr",
+        ":blinky_sv_pnr",
+    ],
+)
+
 build_test(
     name = "smoke_test",
     targets = [
         ":blinky_pnr",
         ":blinky_prog",
         ":blinky_emulated_pnr",
+        ":blinky_vhdl_pnr",
+        ":blinky_vhdl_emulated_pnr",
+        ":blinky_sv_pnr",
+        ":blinky_sv_emulated_pnr",
         "@rules_openxc7//openxc7:defs",
     ],
 )
