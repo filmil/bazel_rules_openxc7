@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load(
     "@rules_openxc7//openxc7:defs.bzl",
     "vivado_place_and_route",
@@ -14,6 +15,32 @@ load(
     vivado_emulated_place_and_route = "vivado_place_and_route",
     vivado_emulated_project = "vivado_project",
     vivado_emulated_synthesis = "vivado_synthesis",
+)
+load("@rules_vivado//internal:toolchain.bzl", "vivado_toolchain")
+
+bool_flag(
+    name = "emulate",
+    build_setting_default = True,
+)
+
+config_setting(
+    name = "emulating",
+    flag_values = {":emulate": "True"},
+)
+
+vivado_toolchain(
+    name = "openxc7_vivado",
+    mode = "host",
+    runner = "@rules_openxc7//vivado:runner",
+    vivado_path = "/rules_openxc7/vivado",
+    vivado_version = "openxc7",
+)
+
+toolchain(
+    name = "openxc7_vivado_toolchain",
+    target_settings = [":emulating"],
+    toolchain = ":openxc7_vivado",
+    toolchain_type = "@rules_vivado//toolchains:toolchain_type",
 )
 
 # A consumer's view of the module: rules_vivado's blinky, built to a

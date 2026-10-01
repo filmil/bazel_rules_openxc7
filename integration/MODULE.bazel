@@ -26,4 +26,4 @@ bazel_dep(name = "rules_shell", version = "0.8.0")
 # rules_vivado's own rules, on the emulated Vivado a user registers.
 bazel_dep(name = "rules_vivado", version = "3.14.0")
 
-register_toolchains("@rules_openxc7//vivado:all")
+register_toolchains("//:openxc7_vivado_toolchain")

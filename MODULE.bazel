@@ -10,9 +10,6 @@ bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "rules_shell", version = "0.8.0")
 bazel_dep(name = "rules_python", version = "2.3.4")
 
-# rules_vivado, for //vivado: an emulated Vivado that its rules can run on.
-bazel_dep(name = "rules_vivado", version = "3.14.0")
-
 # A hermetic C and C++ toolchain for this repository's own builds: LLVM,
 # with a pinned Debian sysroot, so nothing is compiled against the host's
 # compiler, headers or libraries. It is a dev dependency: toolchains_llvm
