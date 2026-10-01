@@ -82,15 +82,31 @@ AX7A200B constraints, unchanged.
 
 ### As a Vivado toolchain for rules_vivado
 
-A project that already uses rules_vivado can keep its `load` lines and
-BUILD files, and register this module's emulated Vivado instead:
+A project that uses rules_vivado can run its rules on openxc7 by binding
+rules_vivado's toolchain to `@rules_openxc7//vivado:runner`:
+
+```python
+# BUILD.bazel
+load("@rules_vivado//internal:toolchain.bzl", "vivado_toolchain")
+
+vivado_toolchain(
+    name = "openxc7_vivado",
+    mode = "host",
+    runner = "@rules_openxc7//vivado:runner",
+    vivado_path = "/rules_openxc7/vivado",
+    vivado_version = "openxc7",
+)
+
+toolchain(
+    name = "openxc7_vivado_toolchain",
+    toolchain = ":openxc7_vivado",
+    toolchain_type = "@rules_vivado//toolchains:toolchain_type",
+)
+```
 
 ```python
 # MODULE.bazel
-bazel_dep(name = "rules_openxc7", version = "<version>")
-bazel_dep(name = "rules_vivado", version = "3.14.0")
-
-register_toolchains("@rules_openxc7//vivado:all")
+register_toolchains("//:openxc7_vivado_toolchain")
 ```
 
 rules_vivado's `vivado_project`, `vivado_synthesis` and
@@ -105,13 +121,6 @@ A design gives the same configuration data either way:
 `integration` builds rules_vivado's blinky designs (Verilog, VHDL, and
 SystemVerilog with slang) with rules_vivado's rules on the emulated
 toolchain, and checks them against the openxc7 bitstreams.
-
-`--@rules_openxc7//vivado:emulate=false` turns the emulation off, so
-that the toolchain rules_vivado registers (Docker, host or hermetic
-Vivado) applies again.
-This module does not register the emulation for its users: a project
-that depends on both modules would otherwise lose Vivado without
-asking.
 
 What is not emulated fails with a message that says so: IP,
 simulation, the hardware manager, and any Vivado command the Tcl uses
