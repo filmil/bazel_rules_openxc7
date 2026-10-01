@@ -147,7 +147,8 @@ vivado_program_flash(
 <pre>
 load("@rules_openxc7//openxc7:defs.bzl", "vivado_project")
 
-vivado_project(<a href="#vivado_project-name">name</a>, <a href="#vivado_project-deps">deps</a>, <a href="#vivado_project-srcs">srcs</a>, <a href="#vivado_project-hdrs">hdrs</a>, <a href="#vivado_project-defines">defines</a>, <a href="#vivado_project-env">env</a>, <a href="#vivado_project-include_dirs">include_dirs</a>, <a href="#vivado_project-mount">mount</a>, <a href="#vivado_project-part">part</a>, <a href="#vivado_project-top_level">top_level</a>, <a href="#vivado_project-xdcs">xdcs</a>)
+vivado_project(<a href="#vivado_project-name">name</a>, <a href="#vivado_project-deps">deps</a>, <a href="#vivado_project-srcs">srcs</a>, <a href="#vivado_project-hdrs">hdrs</a>, <a href="#vivado_project-defines">defines</a>, <a href="#vivado_project-env">env</a>, <a href="#vivado_project-include_dirs">include_dirs</a>, <a href="#vivado_project-mount">mount</a>, <a href="#vivado_project-part">part</a>,
+               <a href="#vivado_project-systemverilog_parser">systemverilog_parser</a>, <a href="#vivado_project-top_level">top_level</a>, <a href="#vivado_project-xdcs">xdcs</a>)
 </pre>
 
 A design: sources, constraints, top module and part.
@@ -175,13 +176,14 @@ vivado_project(
 | :------------- | :------------- | :------------- | :------------- | :------------- |
 | <a id="vivado_project-name"></a>name |  A unique name for this target.   | <a href="https://bazel.build/concepts/labels#target-names">Name</a> | required |  |
 | <a id="vivado_project-deps"></a>deps |  Not supported: vivado_library dependencies.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
-| <a id="vivado_project-srcs"></a>srcs |  Verilog and SystemVerilog sources.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
+| <a id="vivado_project-srcs"></a>srcs |  Verilog, SystemVerilog and VHDL sources.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="vivado_project-hdrs"></a>hdrs |  Files the sources include.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 | <a id="vivado_project-defines"></a>defines |  Preprocessor defines, NAME or NAME=VALUE.   | List of strings | optional |  `[]`  |
-| <a id="vivado_project-env"></a>env |  Accepted for rules_vivado compatibility; no effect.   | <a href="https://bazel.build/rules/lib/core/dict">Dictionary: String -> String</a> | optional |  `{}`  |
+| <a id="vivado_project-env"></a>env |  Accepted for rules_vivado compatibility; sets emulator environment.   | <a href="https://bazel.build/rules/lib/core/dict">Dictionary: String -> String</a> | optional |  `{}`  |
 | <a id="vivado_project-include_dirs"></a>include_dirs |  Include directories, relative to the execution root.   | List of strings | optional |  `[]`  |
 | <a id="vivado_project-mount"></a>mount |  Accepted for rules_vivado compatibility; no effect.   | <a href="https://bazel.build/rules/lib/core/dict">Dictionary: String -> String</a> | optional |  `{}`  |
 | <a id="vivado_project-part"></a>part |  The part targeted, e.g. xc7a200tfbg484-2.   | String | required |  |
+| <a id="vivado_project-systemverilog_parser"></a>systemverilog_parser |  Parser for SystemVerilog (.sv) sources: 'yosys' (default) or 'slang'.   | String | optional |  `"yosys"`  |
 | <a id="vivado_project-top_level"></a>top_level |  Top level module name.   | String | required |  |
 | <a id="vivado_project-xdcs"></a>xdcs |  Constraint files, in order.   | <a href="https://bazel.build/concepts/labels">List of labels</a> | optional |  `[]`  |
 
@@ -246,7 +248,7 @@ The result of place, route and bitstream generation.
 <pre>
 load("@rules_openxc7//openxc7:defs.bzl", "OpenXC7ProjectInfo")
 
-OpenXC7ProjectInfo(<a href="#OpenXC7ProjectInfo-top_level">top_level</a>, <a href="#OpenXC7ProjectInfo-part">part</a>, <a href="#OpenXC7ProjectInfo-srcs">srcs</a>, <a href="#OpenXC7ProjectInfo-hdrs">hdrs</a>, <a href="#OpenXC7ProjectInfo-xdcs">xdcs</a>, <a href="#OpenXC7ProjectInfo-defines">defines</a>, <a href="#OpenXC7ProjectInfo-include_dirs">include_dirs</a>)
+OpenXC7ProjectInfo(<a href="#OpenXC7ProjectInfo-top_level">top_level</a>, <a href="#OpenXC7ProjectInfo-part">part</a>, <a href="#OpenXC7ProjectInfo-srcs">srcs</a>, <a href="#OpenXC7ProjectInfo-hdrs">hdrs</a>, <a href="#OpenXC7ProjectInfo-xdcs">xdcs</a>, <a href="#OpenXC7ProjectInfo-defines">defines</a>, <a href="#OpenXC7ProjectInfo-include_dirs">include_dirs</a>, <a href="#OpenXC7ProjectInfo-systemverilog_parser">systemverilog_parser</a>)
 </pre>
 
 A design: its sources, constraints and target part.
@@ -262,6 +264,7 @@ A design: its sources, constraints and target part.
 | <a id="OpenXC7ProjectInfo-xdcs"></a>xdcs |  list of XDC files, in order.    |
 | <a id="OpenXC7ProjectInfo-defines"></a>defines |  list of preprocessor defines, NAME or NAME=VALUE.    |
 | <a id="OpenXC7ProjectInfo-include_dirs"></a>include_dirs |  list of include directories.    |
+| <a id="OpenXC7ProjectInfo-systemverilog_parser"></a>systemverilog_parser |  Parser for SystemVerilog: 'yosys' or 'slang'.    |
 
 
 <a id="OpenXC7SynthInfo"></a>

@@ -11,6 +11,7 @@ OpenXC7ProjectInfo = provider(
         "xdcs": "list of XDC files, in order.",
         "defines": "list of preprocessor defines, NAME or NAME=VALUE.",
         "include_dirs": "list of include directories.",
+        "systemverilog_parser": "Parser for SystemVerilog: 'yosys' or 'slang'.",
     },
 )
 

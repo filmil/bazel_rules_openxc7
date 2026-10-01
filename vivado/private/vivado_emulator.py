@@ -37,6 +37,7 @@ OPENXC7_CHIPDB_<die> and OPENXC7_PART_YAML_<part> give the databases.
 
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -74,10 +75,13 @@ class Vivado:
         self.part = None
         self.top = None
         self.verilog = []  # (path, is_sv)
+        self.vhdl = []  # path
         self.xdcs = []
         self.include_dirs = []
         self.defines = []
         self.parameters = []
+        self.generics = []
+        self.systemverilog_parser = os.environ.get("OPENXC7_SYSTEMVERILOG_PARSER", "yosys")
         self.netlist = None  # text of the Yosys JSON netlist
         self.fasm = None  # text of the routed FASM
         self.reports = {}
@@ -139,8 +143,13 @@ class Vivado:
         return ""
 
     def read_vhdl(self, *args):
-        raise TclError("read_vhdl: VHDL is not supported by the open flow, "
-                       "which reads Verilog and SystemVerilog only")
+        opts, files = self.options(args, flags=("-vhdl2008", "-vhdl93", "-v93"),
+                                   values=("-library",))
+        for f in files:
+            for name in f.split():
+                if name not in self.vhdl:
+                    self.vhdl.append(name)
+        return ""
 
     def read_xdc(self, *args):
         _, files = self.options(args, values=("-ref", "-cells", "-mode"))
@@ -171,16 +180,54 @@ class Vivado:
         self.part = opts.get("-part", [self.part])[0]
         if not self.top or not self.part:
             raise TclError("synth_design needs -top and a part")
-        if opts.get("-generic"):
-            raise TclError("synth_design -generic: VHDL generics are not supported")
-        self.parameters = opts.get("-parameter", [])
+        self.generics = opts.get("-generic", self.generics)
+        self.parameters = opts.get("-parameter", self.parameters)
         if self.part not in DIES:
             raise TclError("part %s is not supported; supported: %s"
                            % (self.part, ", ".join(sorted(DIES))))
-        read = ["read_verilog", "-sv"]
-        read += ["-D" + d for d in self.defines]
-        read += ["-I" + d for d in self.include_dirs]
-        script = [" ".join(read + [shlex.quote(f) for f, _ in self.verilog])]
+
+        use_slang = (
+            self.systemverilog_parser == "slang"
+            or os.environ.get("OPENXC7_SYSTEMVERILOG_PARSER") == "slang"
+            or os.environ.get("OPENXC7_SLANG") == "1"
+            or "OPENXC7_SLANG=1" in self.defines
+            or "OPENXC7_SLANG" in self.defines
+        )
+
+        defines = ["-D" + d for d in self.defines]
+        inc_dirs = ["-I" + d for d in self.include_dirs]
+
+        v_files = [f for f, is_sv in self.verilog if not is_sv]
+        sv_files = [f for f, is_sv in self.verilog if is_sv]
+
+        script = []
+        if use_slang:
+            if v_files:
+                script.append(" ".join(["read_verilog"] + defines + inc_dirs + [shlex.quote(f) for f in v_files]))
+            if sv_files:
+                script.append(" ".join(["read_slang"] + defines + inc_dirs + [shlex.quote(f) for f in sv_files]))
+        else:
+            verilog_all = [f for f, _ in self.verilog]
+            if verilog_all:
+                script.append(" ".join(["read_verilog", "-sv"] + defines + inc_dirs + [shlex.quote(f) for f in verilog_all]))
+
+        if self.vhdl:
+            generic_args = ["-g" + g for g in self.generics]
+            top_is_vhdl = not self.verilog
+            if not top_is_vhdl:
+                top_pat = re.compile(r"\bentity\s+" + re.escape(self.top) + r"\b", re.IGNORECASE)
+                for f in self.vhdl:
+                    if os.path.exists(f):
+                        with open(f, errors="ignore") as fh:
+                            if top_pat.search(fh.read()):
+                                top_is_vhdl = True
+                                break
+            if top_is_vhdl:
+                script.append(" ".join(["ghdl", "--std=08"] + generic_args + [shlex.quote(f) for f in self.vhdl] + ["-e", self.top]))
+            else:
+                script.append(" ".join(["ghdl", "-read", "--std=08"] + [shlex.quote(f) for f in self.vhdl]))
+                script.append("hierarchy -top %s" % self.top)
+
         for p in self.parameters:
             name, _, value = p.partition("=")
             script.append("chparam -set %s %s %s" % (name, value, self.top))
@@ -191,7 +238,14 @@ class Vivado:
         ]
         with open(".openxc7.synth.ys", "w") as f:
             f.write("\n".join(script) + "\n")
-        self.run([self.tool("OPENXC7_YOSYS"), "-q", "-s", ".openxc7.synth.ys"], "yosys")
+
+        plugins = []
+        if use_slang and sv_files:
+            plugins.extend(["-m", "slang"])
+        if self.vhdl:
+            plugins.extend(["-m", "ghdl"])
+
+        self.run([self.tool("OPENXC7_YOSYS")] + plugins + ["-q", "-s", ".openxc7.synth.ys"], "yosys")
         with open(".openxc7.netlist.json") as f:
             self.netlist = f.read()
         with open(".openxc7.utilization.txt") as f:
@@ -331,9 +385,12 @@ class Vivado:
             "part": self.part,
             "top": self.top,
             "verilog": self.verilog,
+            "vhdl": self.vhdl,
             "xdcs": self.xdcs,
             "include_dirs": self.include_dirs,
             "defines": self.defines,
+            "generics": self.generics,
+            "systemverilog_parser": self.systemverilog_parser,
             "runs": self.runs,
         }
         with open(self.xpr_path(), "w") as f:
@@ -349,6 +406,9 @@ class Vivado:
         self.project = state["project"]
         self.part, self.top = state["part"], state["top"]
         self.verilog = [tuple(v) for v in state["verilog"]]
+        self.vhdl = list(state.get("vhdl", []))
+        self.generics = list(state.get("generics", []))
+        self.systemverilog_parser = state.get("systemverilog_parser", self.systemverilog_parser)
         self.xdcs, self.include_dirs = state["xdcs"], state["include_dirs"]
         self.defines, self.runs = state["defines"], state["runs"]
         self.note("opened project %s" % self.project)

@@ -18,7 +18,10 @@ filegroup(
         "bin/yosys-abc",
         "libexec/yosys",
         "libexec/yosys-abc",
-    ] + _LIBS + glob(["share/yosys/**"]),
+    ] + _LIBS + glob([
+        "lib/ghdl/**",
+        "share/yosys/**",
+    ]),
 )
 
 filegroup(

@@ -11,6 +11,11 @@ load(
     "vivado_synthesis",
 )
 
+exports_files([
+    "blinky_sv.sv",
+    "blinky_vhdl.vhd",
+])
+
 vivado_project(
     name = "blinky",
     srcs = ["blinky.sv"],
@@ -29,6 +34,45 @@ vivado_place_and_route(
     name = "blinky_pnr",
     synthesis = ":blinky_synth",
     # //tests/fpga_as compares its own bitstream with this one.
+    visibility = ["//tests:__subpackages__"],
+)
+
+vivado_project(
+    name = "blinky_vhdl",
+    srcs = ["blinky_vhdl.vhd"],
+    part = "xc7a200tfbg484-2",
+    top_level = "up_counter_vhdl",
+    xdcs = ["alinx-a200t-b.xdc"],
+)
+
+vivado_synthesis(
+    name = "blinky_vhdl_synth",
+    project = ":blinky_vhdl",
+)
+
+vivado_place_and_route(
+    name = "blinky_vhdl_pnr",
+    synthesis = ":blinky_vhdl_synth",
+    visibility = ["//tests:__subpackages__"],
+)
+
+vivado_project(
+    name = "blinky_sv",
+    srcs = ["blinky_sv.sv"],
+    part = "xc7a200tfbg484-2",
+    systemverilog_parser = "slang",
+    top_level = "up_counter_sv",
+    xdcs = ["alinx-a200t-b.xdc"],
+)
+
+vivado_synthesis(
+    name = "blinky_sv_synth",
+    project = ":blinky_sv",
+)
+
+vivado_place_and_route(
+    name = "blinky_sv_pnr",
+    synthesis = ":blinky_sv_synth",
     visibility = ["//tests:__subpackages__"],
 )
 

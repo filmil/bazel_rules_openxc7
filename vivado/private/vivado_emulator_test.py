@@ -79,6 +79,7 @@ class EmulatorTest(unittest.TestCase):
         stubs = {
             # Yosys: records its script, writes the netlist and a report.
             "OPENXC7_YOSYS": """
+                echo "$@" > yosys.args
                 cp .openxc7.synth.ys yosys.script
                 echo '%s' > .openxc7.netlist.json
                 echo 'Number of cells: 3' > .openxc7.utilization.txt
@@ -154,12 +155,34 @@ class EmulatorTest(unittest.TestCase):
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("yosys failed", r.stderr)
 
-    def test_vhdl_is_refused(self):
-        with open(self.path("v.tcl"), "w") as f:
-            f.write("read_vhdl {a.vhd}\n")
-        r = self.vivado("-source", "v.tcl")
-        self.assertNotEqual(r.returncode, 0)
-        self.assertIn("VHDL is not supported", r.stderr)
+    def test_vhdl_synthesis_and_generics(self):
+        vhdl_tcl = """
+        create_project vhdl_proj -force
+        read_vhdl -vhdl2008 {counter.vhd}
+        set_property part xc7a200tfbg484-2 [current_project]
+        set_property top up_counter_vhdl [current_fileset]
+        synth_design -top up_counter_vhdl -part xc7a200tfbg484-2 -generic {WIDTH=8}
+        """
+        with open(self.path("vhdl.tcl"), "w") as f:
+            f.write(vhdl_tcl)
+        r = self.vivado("-source", "vhdl.tcl")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        script = open(self.path("yosys.script")).read()
+        self.assertIn("ghdl --std=08 -gWIDTH=8 counter.vhd -e up_counter_vhdl", script)
+        args = open(self.path("yosys.args")).read()
+        self.assertIn("-m ghdl", args)
+
+    def test_systemverilog_slang(self):
+        self.env["OPENXC7_SYSTEMVERILOG_PARSER"] = "slang"
+        r = self.vivado("-source", "xpr.tcl")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        r = self.vivado("-source", "synth.tcl", "blinky.xpr")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        script = open(self.path("yosys.script")).read()
+        self.assertIn("read_slang", script)
+        self.assertIn("blinky.sv", script)
+        args = open(self.path("yosys.args")).read()
+        self.assertIn("-m slang", args)
 
     def test_other_tools_are_not_emulated(self):
         r = subprocess.run([sys.executable, EMULATOR, "-mode", "tcl"],

@@ -41,6 +41,7 @@ def _openxc7_toolchain_impl(ctx):
         # The tools' whole directories, for runners that must not expose
         # the tools' individual files (see //vivado/private:runner.bzl).
         trees = depset(ctx.files.trees),
+        plugins = ctx.attr.plugins,
     ))]
 
 _EXE = dict(executable = True, cfg = "exec", allow_files = True)
@@ -71,6 +72,10 @@ openxc7_toolchain = rule(
         "trees": attr.label_list(
             allow_files = True,
             doc = "The directories every tool above lies in, as directory inputs.",
+        ),
+        "plugins": attr.string_list(
+            default = [],
+            doc = "Yosys plugins available in this toolchain (e.g. 'slang', 'ghdl').",
         ),
     },
 )
