@@ -181,13 +181,18 @@ untimed report builds on instance-3 after pass 2:
 | LUTs | 1,671 LUT cells from Yosys (nextpnr: 1,767 SLICE_LUTX sites) | 890 slice LUTs (`utilization_placed.rpt`) |
 | Registers | 553 | 555 |
 | Block RAM | 1 RAMB18E1 | 0.5 tile (one RAMB18) |
-| Speed at the 100 MHz constraint | nextpnr's estimate: 179.9 MHz in this build, 147.2 MHz in an earlier one | setup slack 3.955 ns, about 165 MHz |
-| Hold | one 0.02 ns violation in the earlier build (see 2) | met, worst hold slack 0.058 ns |
+| Speed at the 100 MHz constraint | nextpnr, after routing: 147.2 MHz (179.9 MHz after placement) | setup slack 3.955 ns, about 165 MHz |
+| Hold | one 0.02 ns violation (see 2) | met, worst hold slack 0.058 ns |
 
 * Vivado's netlist uses about half the LUTs. The registers and the RAM
   are the same, so the difference is in logic optimisation and mapping.
-* The two speeds come from different timing models: nextpnr's estimate,
-  and Vivado's signoff analysis. They are close, not comparable to the
-  megahertz. nextpnr's result also varies from build to build, with
-  placement.
+* The two speeds come from different timing models: nextpnr's timing
+  analysis and Vivado's signoff analysis. They are close, not comparable
+  to the megahertz. nextpnr prints a figure after placement and one after
+  routing; the routed one, 147.2 MHz, was the same on eph1 and instance-3.
+* Sixteen cores, from the report builds after pass 3: openxc7 26,668 LUT
+  cells, 8,852 registers, 16 RAMB18E1, 131.1 MHz after routing and seven
+  hold violations (worst −0.05 ns); Vivado 14,216 slice LUTs, 8,880
+  registers, 8 block RAM tiles (16 RAMB18), setup slack 3.063 ns (about
+  144 MHz) and hold met (+0.057 ns).
 * Vivado repairs hold time; nextpnr does not (see 2).
