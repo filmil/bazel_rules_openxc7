@@ -20,6 +20,8 @@
 #   REPEATS   runs of each case, default 3
 #   REPO_CACHE  Bazel repository cache to share between runs, so that
 #             downloads are not timed; default /data/cache/bazel/repo
+#   BAZEL_FLAGS extra flags for every build, for example
+#             --override_module=rules_vivado=/path/to/a/checkout
 #
 # Output, in OUT_DIR: results.tsv (one line per measurement), env.txt (the
 # machine and the tool versions), and the Bazel profile of each run.
@@ -31,6 +33,7 @@ flows="${FLOWS:-openxc7 vivado}"
 designs="${DESIGNS:-blinky picorv32 picorv32_x16}"
 repeats="${REPEATS:-3}"
 repo_cache="${REPO_CACHE:-/data/cache/bazel/repo}"
+read -r -a bazel_flags <<< "${BAZEL_FLAGS:-}"
 
 [[ -f MODULE.bazel && -f BUILD.bazel && -d bench ]] \
     || { echo "run from the integration directory" >&2; exit 1; }
@@ -76,6 +79,7 @@ target_of() {  # flow design step
     echo "flows: $flows"
     echo "designs: $designs"
     echo "repeats: $repeats"
+    echo "bazel flags: ${BAZEL_FLAGS:-}"
 } > "$out/env.txt"
 
 printf 'flow\tdesign\tcase\trepeat\tstep\tseconds\texit\tload1_before\tload1_after\n' > "$results"
@@ -87,6 +91,9 @@ timed_build() {
     local target; target="$(target_of "$flow" "$design" "$step")"
     local -a extra=()
     [[ -n "$dc" ]] && extra+=("--disk_cache=$dc")
+    # Bazel keeps unpacked repositories next to the repository cache, and
+    # would reuse them across output bases. A cold build unpacks its tools.
+    [[ "$case" == cold ]] && extra+=("--repo_contents_cache=")
     local profile="$out/profiles/${flow}.${design}.${case}.${rep}.${step}.json.gz"
     local load_before load_after start end rc
     load_before="$(cut -d' ' -f1 /proc/loadavg)"
@@ -95,7 +102,7 @@ timed_build() {
     # shellcheck disable=SC2046
     bazel --output_base="$ob" build $(flags_of "$flow") \
         --repository_cache="$repo_cache" \
-        "${extra[@]}" \
+        "${bazel_flags[@]}" "${extra[@]}" \
         --profile="$profile" \
         "$target" > "$out/profiles/${flow}.${design}.${case}.${rep}.${step}.log" 2>&1
     rc=$?
@@ -126,11 +133,20 @@ for flow in $flows; do
             # noop: the same output base again, nothing changed.
             timed_build "$flow" "$design" noop "$rep" pnr "$ob" "$dc" || true
 
-            # edit: one comment line added to the design, then both steps.
+            # edit_end: a comment line appended to the design. The netlist
+            # may come out the same, and then Bazel reuses the place and
+            # route from before.
             cp "$src" "$work/$src.orig"
             echo "// bench edit $tag" >> "$src"
-            timed_build "$flow" "$design" edit "$rep" synth "$ob" "$dc" || true
-            timed_build "$flow" "$design" edit "$rep" pnr "$ob" "$dc" || true
+            timed_build "$flow" "$design" edit_end "$rep" synth "$ob" "$dc" || true
+            timed_build "$flow" "$design" edit_end "$rep" pnr "$ob" "$dc" || true
+            cp "$work/$src.orig" "$src"
+
+            # edit_top: a comment line put first. It moves every source line
+            # number recorded in the netlist, so both steps run again.
+            { echo "// bench edit $tag"; cat "$work/$src.orig"; } > "$src"
+            timed_build "$flow" "$design" edit_top "$rep" synth "$ob" "$dc" || true
+            timed_build "$flow" "$design" edit_top "$rep" pnr "$ob" "$dc" || true
             cp "$work/$src.orig" "$src"
             bazel --output_base="$ob" shutdown >/dev/null 2>&1 || true
             rm -rf "$ob"

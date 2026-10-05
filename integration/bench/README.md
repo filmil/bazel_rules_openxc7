@@ -21,13 +21,15 @@ For each flow and design, and for each of `REPEATS` repeats:
 
 | Case | What is timed |
 |---|---|
-| `cold` | a new Bazel output base and an empty disk cache: synthesis, then place and route on top of it |
+| `cold` | a new Bazel output base, an empty disk cache and no repository contents cache, so the tools are unpacked again: synthesis, then place and route on top of it |
 | `noop` | the same build again, nothing changed |
-| `edit` | one comment line appended to the design's source, then synthesis and place and route again, with the Bazel server warm |
+| `edit_end` | one comment line appended to the design's source, then synthesis and place and route again, with the Bazel server warm. If the netlist comes out the same, Bazel reuses the earlier place and route |
+| `edit_top` | one comment line put first in the source: it moves the source line numbers recorded in the netlist, so both steps run again |
 | `warm` | a new output base, with the disk cache the cold run filled: what a CI job with a shared cache sees |
 
 Downloads are not timed: every run shares one repository cache
-(`REPO_CACHE`). Vivado's own installation is not timed either: it lives
+(`REPO_CACHE`). Unpacking the tools into a new output base is timed, as
+part of `cold` and `warm`: a fresh CI job pays for it too. Vivado's own installation is not timed either: it lives
 in `/data/cache/vivado-install` and is made once, before the first run.
 
 ## Running it
