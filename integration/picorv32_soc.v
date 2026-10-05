@@ -4,9 +4,15 @@
 // with 1 KiB of on-chip RAM and an LED register, on blinky's pins.
 //
 // Each core runs a four-instruction program from its RAM: it counts in x1
-// and stores the count to the LED register at 0x1000, forever. The board's
-// LED shows the exclusive or of bit 20 of every core's LED register, so no
-// core can be removed by synthesis as unused.
+// and stores the count to the LED register at 0x1000, forever. Core i
+// counts in steps of i + 1, so no two cores compute the same sequence. The
+// board's LED shows the exclusive or of bit 20 of every core's LED
+// register.
+//
+// The different steps matter. With one step for all, the cores are
+// identical, and the exclusive or of an even number of identical bits is
+// always 0: Vivado proved the LED constant and removed the whole sixteen-core
+// design (bench/NOTES.md, 4).
 //
 // SOC_CORES is set with a define: 1 for the small case, 16 for the large
 // one. The ports are blinky's, so alinx-a200t-b.xdc applies unchanged.
@@ -25,7 +31,7 @@ module picorv32_soc (
     genvar i;
     generate
         for (i = 0; i < `SOC_CORES; i = i + 1) begin : core
-            picorv32_tile tile (
+            picorv32_tile #(.STEP(i + 1)) tile (
                 .clk(clk),
                 .resetn(~reset),
                 .led(led_bits[i])
@@ -36,8 +42,11 @@ module picorv32_soc (
     assign out = ^led_bits;
 endmodule
 
-// One core, its RAM and its LED register.
-module picorv32_tile (
+// One core, its RAM and its LED register. STEP is the core's count step,
+// 1 to 2047.
+module picorv32_tile #(
+    parameter integer STEP = 1
+) (
     input  wire clk,
     input  wire resetn,
     output wire led
@@ -69,7 +78,7 @@ module picorv32_tile (
 
     // 256 words of RAM. The program:
     //   0x0: lui  x2, 0x1        x2 = 0x1000, the LED register
-    //   0x4: addi x1, x1, 1
+    //   0x4: addi x1, x1, STEP
     //   0x8: sw   x1, 0(x2)
     //   0xc: j    0x4
     reg [31:0] ram [0:255];
@@ -77,7 +86,7 @@ module picorv32_tile (
     initial begin
         for (k = 0; k < 256; k = k + 1) ram[k] = 32'h0000_0013;  // nop
         ram[0] = 32'h0000_1137;
-        ram[1] = 32'h0010_8093;
+        ram[1] = (STEP << 20) | 32'h0000_8093;
         ram[2] = 32'h0011_2023;
         ram[3] = 32'hff9f_f06f;
     end
