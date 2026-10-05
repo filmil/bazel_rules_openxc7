@@ -80,3 +80,24 @@ which replaces the symlink instead of writing through it. Checked here
 with `--override_module=rules_vivado=` on that branch: three emulated
 place and route targets rebuilt twice, and the sources kept mode 644. The
 benchmark needs a rules_vivado release with this fix.
+
+## Method: what "cold" means
+
+Two effects found in a smoke run of `bench.sh` (openxc7, blinky, on
+eph1) change what a case measures. The script handles both.
+
+* **Bazel 9 reuses unpacked tools across output bases.** The repository
+  contents cache, next to the repository cache, keeps each unpacked
+  repository. The first cold synthesis took 60.6 s, the second 8.8 s,
+  because the second did not unpack oss-cad-suite again. The `cold` case
+  now passes `--repo_contents_cache=`. `warm` keeps that cache, as a CI
+  job with shared caches would.
+* **A comment at the end of a source may change nothing downstream.**
+  After a comment was appended to `blinky.sv`, synthesis ran again
+  (4.0 s), Yosys wrote the same netlist, and Bazel reused the place and
+  route (0.3 s). A comment put first moves the source line numbers that
+  Yosys records, so place and route runs again (10.6 s). The script times
+  both, as `edit_end` and `edit_top`. rules_vivado's place and route
+  depends on the synthesis output directory, which holds copies of the
+  sources, so it is expected to run again after any edit (see 3); the
+  Vivado runs will show whether it does.
