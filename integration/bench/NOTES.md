@@ -170,3 +170,24 @@ for the larger designs. Cold runs turn off the repository contents cache
 (see Method), so the first warm run of a pass is the first to fill it: it
 unpacks oss-cad-suite. Later warm runs reuse it. The cache lives with the
 repository cache and outlives a pass, so pass 2 does not pay it.
+
+## 7. Result quality: the same design, two netlists
+
+Build time is half of the comparison. For PicoRV32 with one core, from the
+untimed report builds on instance-3 after pass 2:
+
+| | openxc7 | Vivado |
+|---|---|---|
+| LUTs | 1,671 LUT cells from Yosys (nextpnr: 1,767 SLICE_LUTX sites) | 890 slice LUTs (`utilization_placed.rpt`) |
+| Registers | 553 | 555 |
+| Block RAM | 1 RAMB18E1 | 0.5 tile (one RAMB18) |
+| Speed at the 100 MHz constraint | nextpnr's estimate: 179.9 MHz in this build, 147.2 MHz in an earlier one | setup slack 3.955 ns, about 165 MHz |
+| Hold | one 0.02 ns violation in the earlier build (see 2) | met, worst hold slack 0.058 ns |
+
+* Vivado's netlist uses about half the LUTs. The registers and the RAM
+  are the same, so the difference is in logic optimisation and mapping.
+* The two speeds come from different timing models: nextpnr's estimate,
+  and Vivado's signoff analysis. They are close, not comparable to the
+  megahertz. nextpnr's result also varies from build to build, with
+  placement.
+* Vivado repairs hold time; nextpnr does not (see 2).
