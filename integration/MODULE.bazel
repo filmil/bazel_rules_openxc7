@@ -24,6 +24,19 @@ bazel_dep(name = "bazel_skylib", version = "1.9.2")
 bazel_dep(name = "rules_shell", version = "0.8.0")
 
 # rules_vivado's own rules, on the emulated Vivado a user registers.
-bazel_dep(name = "rules_vivado", version = "3.14.0")
+bazel_dep(name = "rules_vivado", version = "3.16.1")
+
+# A real Vivado for the benchmark in bench/: rules_vivado's hermetic
+# installation, with the paths of the CI runners that offer `vivado`
+# (filmil/serving#58). It is fetched only under
+# --@rules_vivado//:vivado_mode=hermetic, which bench/bench.sh sets for its
+# Vivado runs; the emulated build of every other test never touches it.
+vivado = use_extension("@rules_vivado//:extensions.bzl", "vivado")
+vivado.install(
+    install_cache = "/data/cache/vivado-install",
+    modules = ["Artix-7"],
+    urls = ["file:///data/tools/archives/FPGAs_AdaptiveSoCs_Unified_SDI_2025.2_1114_2157_1.tar"],
+)
+use_repo(vivado, "vivado_hermetic")
 
 register_toolchains("//:openxc7_vivado_toolchain")
