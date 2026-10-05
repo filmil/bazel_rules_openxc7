@@ -212,6 +212,66 @@ sh_test(
     ],
 )
 
+# Benchmark designs (//integration/bench): PicoRV32 systems, one core and
+# sixteen, built by both rule sets. rules_vivado's targets run on the
+# emulated Vivado by default, and on a real Vivado with the flags in
+# bench/README.md. The sixteen-core targets are manual: they are only for
+# the benchmark, and too slow for every CI run.
+_PICORV32_DESIGNS = {
+    "picorv32": {"cores": 1, "tags": []},
+    "picorv32_x16": {"cores": 16, "tags": ["manual"]},
+}
+
+[vivado_project(
+    name = name,
+    srcs = [
+        "picorv32_soc.v",
+        "third_party/picorv32/picorv32.v",
+    ],
+    defines = ["SOC_CORES=%d" % d["cores"]],
+    part = "xc7a200tfbg484-2",
+    tags = d["tags"],
+    top_level = "picorv32_soc",
+    xdcs = ["alinx-a200t-b.xdc"],
+) for name, d in _PICORV32_DESIGNS.items()]
+
+[vivado_synthesis(
+    name = name + "_synth",
+    project = ":" + name,
+    tags = d["tags"],
+) for name, d in _PICORV32_DESIGNS.items()]
+
+[vivado_place_and_route(
+    name = name + "_pnr",
+    synthesis = ":" + name + "_synth",
+    tags = d["tags"],
+) for name, d in _PICORV32_DESIGNS.items()]
+
+[vivado_emulated_project(
+    name = name + "_emulated",
+    srcs = [
+        "picorv32_soc.v",
+        "third_party/picorv32/picorv32.v",
+    ],
+    defines = ["SOC_CORES=%d" % d["cores"]],
+    part = "xc7a200tfbg484-2",
+    tags = d["tags"],
+    top_level = "picorv32_soc",
+    xdcs = ["alinx-a200t-b.xdc"],
+) for name, d in _PICORV32_DESIGNS.items()]
+
+[vivado_emulated_synthesis(
+    name = name + "_emulated_synth",
+    project = ":" + name + "_emulated",
+    tags = d["tags"],
+) for name, d in _PICORV32_DESIGNS.items()]
+
+[vivado_emulated_place_and_route(
+    name = name + "_emulated_pnr",
+    synthesis = ":" + name + "_emulated_synth",
+    tags = d["tags"],
+) for name, d in _PICORV32_DESIGNS.items()]
+
 build_test(
     name = "smoke_test",
     targets = [
@@ -222,6 +282,8 @@ build_test(
         ":blinky_vhdl_emulated_pnr",
         ":blinky_sv_pnr",
         ":blinky_sv_emulated_pnr",
+        ":picorv32_pnr",
+        ":picorv32_emulated_pnr",
         "@rules_openxc7//openxc7:defs",
     ],
 )

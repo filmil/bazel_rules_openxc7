@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+
+# The benchmark driver. It runs Bazel itself, with an output base of its
+# own for each measurement, so it is started with `bash bench/bench.sh`
+# from the integration directory; README.md says why and how. The target
+# exists so that the script is part of the build, and is checked by it.
+sh_binary(
+    name = "bench",
+    srcs = ["bench.sh"],
+)
