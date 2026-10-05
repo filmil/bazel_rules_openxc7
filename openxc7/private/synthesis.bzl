@@ -62,6 +62,14 @@ def _vivado_synthesis_impl(ctx):
             script_lines.append("hierarchy -top %s" % project.top_level)
 
     script_lines.append("synth_xilinx -flatten -abc9 -arch xc7 -top %s" % project.top_level)
+
+    # synth_xilinx can leave a $buf cell behind (Yosys's buffer
+    # normalisation, on a wire that only renames another, as PicoRV32's
+    # dbg_mem_addr). nextpnr-xilinx has no BEL for it and fails with "no
+    # BELs remaining to implement cell type '$buf'". Map it to a plain
+    # connection.
+    script_lines.append("techmap -map +/techmap.v t:$buf")
+    script_lines.append("opt_clean")
     script_lines.append("write_json %s" % netlist.path)
     script_lines.append("")
 
