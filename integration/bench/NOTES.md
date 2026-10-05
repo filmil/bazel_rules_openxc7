@@ -79,7 +79,7 @@ own tests keep their sources in subpackages, so they never hit it.
 which replaces the symlink instead of writing through it. Checked here
 with `--override_module=rules_vivado=` on that branch: three emulated
 place and route targets rebuilt twice, and the sources kept mode 644. The
-benchmark needs a rules_vivado release with this fix.
+fix is in rules_vivado 3.16.2, which this module now uses.
 
 ## Method: what "cold" means
 
