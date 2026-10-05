@@ -60,6 +60,11 @@ def _vivado_place_and_route_impl(ctx):
             "--log",
             log.path,
             "--quiet",
+            # As Vivado's route_design: a timing violation is reported in
+            # the log, not a failed build. nextpnr-xilinx does not fix hold
+            # time, so without this a 0.02 ns hold miss into a block RAM
+            # fails a design that Vivado routes.
+            "--timing-allow-fail",
         ],
         inputs = [synth.netlist, xdc, chipdb],
         tools = [tc.nextpnr.files],

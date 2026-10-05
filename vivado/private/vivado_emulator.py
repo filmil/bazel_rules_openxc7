@@ -233,6 +233,10 @@ class Vivado:
             script.append("chparam -set %s %s %s" % (name, value, self.top))
         script += [
             "synth_xilinx -flatten -abc9 -arch xc7 -top %s" % self.top,
+            # A $buf that synth_xilinx leaves has no BEL in nextpnr-xilinx;
+            # openxc7/private/synthesis.bzl says more.
+            "techmap -map +/techmap.v t:$buf",
+            "opt_clean",
             "tee -o .openxc7.utilization.txt stat",
             "write_json .openxc7.netlist.json",
         ]
@@ -325,6 +329,9 @@ class Vivado:
             "-o", "fasm=.openxc7.fasm",
             "--log", ".openxc7.nextpnr.log",
             "--quiet",
+            # Timing is reported, not fatal, as in Vivado's route_design;
+            # openxc7/private/place_and_route.bzl says why.
+            "--timing-allow-fail",
         ], "nextpnr")
         with open(".openxc7.fasm") as f:
             self.fasm = f.read()
