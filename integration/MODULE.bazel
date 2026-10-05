@@ -24,7 +24,7 @@ bazel_dep(name = "bazel_skylib", version = "1.9.2")
 bazel_dep(name = "rules_shell", version = "0.8.0")
 
 # rules_vivado's own rules, on the emulated Vivado a user registers.
-bazel_dep(name = "rules_vivado", version = "3.16.1")
+bazel_dep(name = "rules_vivado", version = "3.16.2")
 
 # A real Vivado for the benchmark in bench/: rules_vivado's hermetic
 # installation, with the paths of the CI runners that offer `vivado`
