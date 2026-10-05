@@ -116,6 +116,32 @@ timed_build() {
     return $rc
 }
 
+# Vivado's installation is a one-off cost per machine: rules_vivado keeps
+# it in its install cache, outside every output base, and later fetches
+# reuse it in seconds. Install it here, before any measurement, so that no
+# timed build pays for it. Its time is recorded as the "install" line.
+if [[ " $flows " == *" vivado "* ]]; then
+    ob="$work/ob.install"
+    start="$(date +%s.%N)"
+    set +e
+    bazel --output_base="$ob" fetch \
+        --repository_cache="$repo_cache" "${bazel_flags[@]}" \
+        --repo=@vivado_hermetic > "$out/profiles/vivado.install.log" 2>&1
+    rc=$?
+    set -e
+    end="$(date +%s.%N)"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        vivado - install 1 fetch \
+        "$(awk -v a="$start" -v b="$end" 'BEGIN { printf "%.1f", b - a }')" \
+        "$rc" - - >> "$results"
+    bazel --output_base="$ob" shutdown >/dev/null 2>&1 || true
+    rm -rf "$ob"
+    if [[ $rc -ne 0 ]]; then
+        echo "Vivado installation failed; see $out/profiles/vivado.install.log" >&2
+        exit 1
+    fi
+fi
+
 for flow in $flows; do
     for design in $designs; do
         src="$(source_of "$design")"

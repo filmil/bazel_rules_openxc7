@@ -29,7 +29,14 @@ For each flow and design, and for each of `REPEATS` repeats:
 
 Downloads are not timed: every run shares one repository cache
 (`REPO_CACHE`). Unpacking the tools into a new output base is timed, as
-part of `cold` and `warm`: a fresh CI job pays for it too. Vivado's own installation is not timed either: it lives
+part of `cold` and `warm`: a fresh CI job pays for it too.
+
+Vivado's installation is not timed with any build. rules_vivado installs
+it once per machine into its install cache (`/data/cache/vivado-install`),
+outside every output base, and later fetches reuse it in seconds. Before
+the first measurement, the script fetches `@vivado_hermetic` once: on a
+machine with an empty cache that installs Vivado, otherwise it takes
+seconds. Its time is the `install` line of `results.tsv`. Vivado's own installation is not timed either: it lives
 in `/data/cache/vivado-install` and is made once, before the first run.
 
 ## Running it
