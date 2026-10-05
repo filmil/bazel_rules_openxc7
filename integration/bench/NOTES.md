@@ -121,11 +121,32 @@ and the LED is the exclusive or of sixteen identical bits, which is always
 all. Vivado's synthesis merges equivalent registers by default; Yosys
 did not here.
 
-**Open.** Vivado's utilisation reports for both designs will settle it;
-instance-3 builds them after pass 2. If Vivado did merge the cores, the
-16-core design needs cores that differ (for example a different increment
-per core) and an output that depends on every one, and its numbers are
-measured again.
+**Confirmed, and worse.** Vivado's placed utilisation reports
+(`report_utilization`, from an untimed build on instance-3 after pass 2):
+
+| Build | Slice LUTs | Slice registers | Block RAM |
+|---|---|---|---|
+| Vivado, 1 core | 890 | 555 | 0.5 tile (one RAMB18) |
+| Vivado, 16 cores | 0 | 0 | 0 |
+| openxc7, 1 core | | 553 FF | 1 RAMB18E1; Fmax 147 MHz |
+| openxc7, 16 cores | | 8,852 FF | 16 RAMB18E1; Fmax 138 MHz |
+
+Vivado did not merge the cores: it removed them all. It proved the LED
+constant (0, the exclusive or of sixteen equal bits), and `opt_design`
+swept away everything that drove it. Its 16-core times measure an empty
+design and are not used. Yosys and nextpnr did not find the constant and
+built all sixteen cores.
+
+The two tools differ here in how far they optimise, not in correctness:
+both outputs drive the LED correctly. For a benchmark, a design must give
+every tool the same work.
+
+**Done.** Core i now counts in steps of i + 1 (`STEP` in
+`picorv32_soc.v`), so the cores compute different sequences and the LED
+is not constant. Core 0 keeps step 1: its `addi` encodes to 0x00108093
+as before, and the 1-core design synthesises to the same cells (96
+CARRY4, 118 LUT6, 1 RAMB18E1), so the 1-core results stand. The 16-core
+design is measured again, both flows, with its utilisation checked.
 
 ## 5. The one-off Vivado installation, and what it leaves behind
 
