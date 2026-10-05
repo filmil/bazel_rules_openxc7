@@ -101,3 +101,51 @@ eph1) change what a case measures. The script handles both.
   depends on the synthesis output directory, which holds copies of the
   sources, so it is expected to run again after any edit (see 3); the
   Vivado runs will show whether it does.
+
+## 4. Vivado's 16-core build barely costs more than its 1-core build
+
+**Seen.** Pass 1 on instance-3 (one repeat), cold, in seconds:
+
+| Flow | 1 core synth / pnr | 16 cores synth / pnr |
+|---|---|---|
+| openxc7 | 34.5 / 51.3 | 94.7 / 485.0 |
+| Vivado | 123.0 / 164.0 | 130.8 / 187.8 |
+
+Yosys keeps all sixteen cores: its cell counts are exactly 16 times the
+1-core ones (96 to 1,536 CARRY4, 1 to 16 RAMB18E1).
+
+**Suspected.** The benchmark design may not be what Vivado builds. All
+sixteen cores are identical, run the same program from the same reset,
+and the LED is the exclusive or of sixteen identical bits, which is always
+0. A tool that proves the cores equivalent can merge them, or remove them
+all. Vivado's synthesis merges equivalent registers by default; Yosys
+did not here.
+
+**Open.** Vivado's utilisation reports for both designs will settle it;
+instance-3 builds them after pass 2. If Vivado did merge the cores, the
+16-core design needs cores that differ (for example a different increment
+per core) and an output that depends on every one, and its numbers are
+measured again.
+
+## 5. The one-off Vivado installation, and what it leaves behind
+
+Pass 1's first Vivado build, `vivado.blinky.cold.synth`, took 6,034.6 s.
+It includes the one-off installation: copying the 103 GB installer
+archive (about 31 MB/s), unpacking it and running the installer. It is
+left out of every comparison. Afterwards the install cache held 52 GB with
+its `COMPLETE` marker, and fresh output bases reused it: the next
+Vivado synthesis in a fresh output base, `vivado.blinky.warm.synth`, took
+18.3 s.
+
+The installation also left a 96 GiB copy of the installer archive in
+Bazel's repository cache (`/data/cache/bazel/repo`), which nothing cleans
+up. rules_vivado could avoid that copy for a `file://` archive; that is a
+separate change.
+
+## 6. The first warm run in a pass unpacks the open tools
+
+`openxc7.blinky.warm.synth` took 30.9 s in pass 1, against 7.6 s and 11.2 s
+for the larger designs. Cold runs turn off the repository contents cache
+(see Method), so the first warm run of a pass is the first to fill it: it
+unpacks oss-cad-suite. Later warm runs reuse it. The cache lives with the
+repository cache and outlives a pass, so pass 2 does not pay it.
