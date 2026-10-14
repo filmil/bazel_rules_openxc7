@@ -46,6 +46,11 @@ filegroup(
 )
 
 filegroup(
+    name = "chipdb_xc7a100t",
+    srcs = ["chipdb/chipdb-xc7a100t.bin"],
+)
+
+filegroup(
     name = "chipdb_xc7a200t",
     srcs = ["chipdb/chipdb-xc7a200t.bin"],
 )
@@ -53,6 +58,11 @@ filegroup(
 filegroup(
     name = "prjxray_db_artix7",
     srcs = glob(["share/nextpnr/external/prjxray-db/artix7/**"]),
+)
+
+filegroup(
+    name = "part_xc7a100tcsg324-1",
+    srcs = ["share/nextpnr/external/prjxray-db/artix7/xc7a100tcsg324-1/part.yaml"],
 )
 
 filegroup(

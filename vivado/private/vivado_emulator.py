@@ -47,7 +47,10 @@ from openxc7.private import bit_normalize
 from openxc7.private import xdc_translate
 
 # part -> die; the part names openFPGALoader and nextpnr know.
-DIES = {"xc7a200tfbg484-2": "xc7a200t"}
+DIES = {
+    "xc7a100tcsg324-1": "xc7a100t",
+    "xc7a200tfbg484-2": "xc7a200t",
+}
 
 # Commands that query or configure things the open flow does not have:
 # accepted, logged, and they return their arguments so that a nested
