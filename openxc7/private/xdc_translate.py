@@ -82,7 +82,9 @@ def select(selector, ports):
 
 def translate_line(line, ports):
     """Returns the lines one XDC line becomes."""
-    code = line.split("#", 1)[0] if not line.lstrip().startswith("#") else ""
+    code = line.split("#", 1)[0].rstrip(" ;") if not line.lstrip().startswith("#") else ""
+    if re.search(r"\[\s*get_(nets|pins)\b", code):
+        return ["# " + line + "  (unsupported selector by nextpnr)"]
     match = SELECTOR.search(code)
     if not match:
         return [line]

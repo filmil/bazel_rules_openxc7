@@ -10,6 +10,11 @@ filegroup(
 )
 
 filegroup(
+    name = "part_xc7a100tcsg324-1",
+    srcs = ["artix7/xc7a100tcsg324-1/part.yaml"],
+)
+
+filegroup(
     name = "part_xc7a200tfbg484-2",
     srcs = ["artix7/xc7a200tfbg484-2/part.yaml"],
 )

@@ -5,6 +5,11 @@
 # The die names the chip database; the family names the Project X-Ray
 # database directory; openFPGALoader names a part without its speed grade.
 PARTS = {
+    "xc7a100tcsg324-1": struct(
+        die = "xc7a100t",
+        family = "artix7",
+        ofl_part = "xc7a100tcsg324",
+    ),
     "xc7a200tfbg484-2": struct(
         die = "xc7a200t",
         family = "artix7",

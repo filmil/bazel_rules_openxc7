@@ -45,7 +45,7 @@ def _vivado_synthesis_impl(ctx):
             read_v = ["read_verilog"] + defines + inc_dirs + [f.path for f in v_srcs]
             script_lines.append(" ".join(read_v))
         if sv_srcs:
-            read_sv = ["read_slang"] + defines + inc_dirs + [f.path for f in sv_srcs]
+            read_sv = ["read_slang", "--allow-use-before-declare", "--unroll-limit", "100000"] + defines + inc_dirs + [f.path for f in sv_srcs]
             script_lines.append(" ".join(read_sv))
     else:
         verilog_files = v_srcs + sv_srcs
